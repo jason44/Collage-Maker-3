@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collage Maker 3</title>
+    <style>
+        /* Basic styles for the body and layout */
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f0f2f5;
+        }
+
+        /* Container for the top control buttons */
+        #controls {
+            padding: 8px;
+            background: #ffffff;
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px solid #dcdfe3;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        #header-title {
+            font-weight: bold;
+            font-size: 18px;
+            padding: 8px;
+            margin: 0;
+            flex-grow: 1;
+            color: #333;
+        }
+
+        /* Styling for buttons */
+        button {
+            padding: 8px 18px;
+            border: 1px solid transparent;
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            background: #0069d9;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.3);
+        }
+
+        #clear-btn {
+            background-color: #dc3545;
+        }
+        #clear-btn:hover {
+            background-color: #c82333;
+            box-shadow: 0 2px 8px rgba(220,53,69,0.3);
+        }
+
+        /* Container for the canvas to ensure it is flexible and centers the canvas */
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #e9ecef;
+        }
+        
+        /* The canvas element where the collage is drawn */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        /* Hidden file input */
+        input[type="file"] {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Control buttons for adding and clearing images -->
+    <div id="controls">
+        <div id="header-title">Collage Maker 3</div>
+        <button id="add-btn">Add Images</button>
+        <button id="clear-btn">Clear All</button>
+        <input type="file" id="file-input" accept="image/*" multiple>
+    </div>
+    
+    <!-- The main container for the canvas -->
+    <div id="canvas-container">
+        <canvas id="collage"></canvas>
+    </div>
+
+<script>
+(() => {
+    // --- SETUP ---
+    const canvas = document.getElementById('collage');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingQuality = "high";
+
+    
+    // --- STATE MANAGEMENT ---
+    let images = []; // Stores all image objects {img, x, y, w, h, aspectRatio}
+    let selectedIndex = -1; // Index of the currently selected image
+    
+    // Panning and Zooming State
+    let scale = 1;
+    let originX = 0;
+    let originY = 0;
+
+    // Interaction State
+    let interactionMode = 'none'; // 'pan', 'drag', 'resize'
+    let dragStart = {}; // Holds data for the current interaction
+    let resizeHandle = ''; // e.g., 'top-left', 'bottom-right'
+
+    const handleSize = 10; // Size of resize handles in screen pixels
+    const closeButtonSize = 24; // Size of the close button
+    const imgRadius = 5; // Corner radius for drawn images
+    const dpr = window.devicePixelRatio || 1;
+
+    // --- CANVAS & DRAWING ---
+
+    /**
+     * Resizes the canvas to fill its container, accounting for device pixel ratio.
+     */
+    function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr); // Scale context once for high-DPI displays
+        draw();
+    }
+
+    /**
+     * The main drawing function. Clears and redraws the entire canvas.
+     */
+    function draw() {
+        // Clear canvas
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        // Apply pan and zoom transform
+        ctx.save();
+        ctx.translate(originX, originY);
+        ctx.scale(scale, scale);
+
+        // Draw all images
+        images.forEach(imgData => {
+            drawRoundedImage(imgData);
+        });
+
+        // Draw selection handles and close button on the selected image
+        if (selectedIndex !== -1) {
+            const selected = images[selectedIndex];
+            drawSelectionUI(selected);
+        }
+
+        ctx.restore();
+    }
+
+    /**
+     * Lays out all images in a masonry grid.
+     */
+    function computeMasonryLayout() {
+        if (images.length === 0) return;
+
+        const gutter = 15;
+        const canvasWidth = canvas.getBoundingClientRect().width / scale; // Use scaled width for layout
+        const cols = Math.max(1, Math.ceil(Math.sqrt(images.length))+1); // Target column width of 250px
+        const colWidth = (canvasWidth - (cols + 1) * gutter) / cols;
+        const colHeights = Array(cols).fill(gutter);
+
+        images.forEach(imgData => {
+            const h = colWidth / imgData.aspectRatio;
+            const colIndex = colHeights.indexOf(Math.min(...colHeights));
+
+            imgData.x = gutter + colIndex * (colWidth + gutter);
+            imgData.y = colHeights[colIndex];
+            imgData.w = colWidth;
+            imgData.h = h;
+
+            colHeights[colIndex] += h + gutter;
+        });
+    }
+
+    /**
+     * Draws a single image with rounded corners.
+     * @param {object} imgData - The image object {img, x, y, w, h}.
+     */
+    function drawRoundedImage(imgData) {
+        const { img, x, y, w, h } = imgData;
+        ctx.save();
+        ctx.beginPath();
+        // Custom path for rounded rectangle
+        ctx.moveTo(x + imgRadius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, imgRadius);
+        ctx.arcTo(x + w, y + h, x, y + h, imgRadius);
+        ctx.arcTo(x, y + h, x, y, imgRadius);
+        ctx.arcTo(x, y, x + w, y, imgRadius);
+        ctx.closePath();
+        ctx.clip();
+        ctx.drawImage(img, x, y, w, h);
+        ctx.restore();
+    }
+    
+    /**
+     * Draws the selection border, resize handles, and close button for an image.
+     * @param {object} imgData - The image object being decorated.
+     */
+    function drawSelectionUI(imgData) {
+        const { x, y, w, h } = imgData;
+
+        // Draw selection border
+        ctx.strokeStyle = '#007bff';
+        ctx.lineWidth = 2 / scale;
+        ctx.strokeRect(x, y, w, h);
+
+        // Draw resize handles
+        const handles = getResizeHandles(imgData);
+        ctx.fillStyle = '#007bff';
+        for (const key in handles) {
+            const handle = handles[key];
+            ctx.fillRect(handle.x, handle.y, handle.w, handle.h);
+        }
+
+        // Draw close button
+        const closeBtn = getCloseButton(imgData);
+        ctx.beginPath();
+        ctx.arc(closeBtn.cx, closeBtn.cy, closeBtn.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(220, 53, 69, 0.9)';
+        ctx.fill();
+        
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${14/scale}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✕', closeBtn.cx, closeBtn.cy);
+    }
+
+
+    // --- COORDINATE & HIT DETECTION ---
+
+    /**
+     * Converts client (mouse) coordinates to canvas world coordinates.
+     * @param {number} clientX - Mouse X position.
+     * @param {number} clientY - Mouse Y position.
+     * @returns {object} {x, y} in canvas coordinates.
+     */
+    function toWorldCoords(clientX, clientY) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: (clientX - rect.left - originX) / scale,
+            y: (clientY - rect.top - originY) / scale
+        };
+    }
+
+    /**
+     * Finds the index of the topmost image at a given coordinate.
+     * @param {object} coords - {x, y} in canvas coordinates.
+     * @returns {number} The index of the image, or -1 if none found.
+     */
+    function getImageAtCoords(coords) {
+        for (let i = images.length - 1; i >= 0; i--) {
+            const img = images[i];
+            if (coords.x >= img.x && coords.x <= img.x + img.w &&
+                coords.y >= img.y && coords.y <= img.y + img.h) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Gets the positions of resize handles for an image.
+     * @param {object} imgData - The image object.
+     * @returns {object} An object containing the geometry of each handle.
+     */
+    function getResizeHandles(imgData) {
+        const { x, y, w, h } = imgData;
+        const size = handleSize / scale;
+        const halfSize = size / 2;
+        return {
+            'top-left':     { x: x - halfSize, y: y - halfSize, w: size, h: size },
+            'top-right':    { x: x + w - halfSize, y: y - halfSize, w: size, h: size },
+            'bottom-left':  { x: x - halfSize, y: y + h - halfSize, w: size, h: size },
+            'bottom-right': { x: x + w - halfSize, y: y + h - halfSize, w: size, h: size },
+        };
+    }
+
+    /**
+     * Gets the position of the close button for an image.
+     * @param {object} imgData - The image object.
+     * @returns {object} Geometry of the close button.
+     */
+     function getCloseButton(imgData) {
+        const { x, w } = imgData;
+        const r = closeButtonSize / 2 / scale;
+        return {
+            cx: x + w - r,
+            cy: imgData.y + r,
+            r: r,
+        };
+    }
+
+    /**
+     * Checks which UI element (if any) is at the given coordinates.
+     * @param {object} coords - {x, y} in canvas coordinates.
+     * @returns {object} { type, index, handle } describing the hit.
+     */
+    function hitTest(coords) {
+        // Check for close button or resize handles on selected image first
+        if (selectedIndex !== -1) {
+            const selected = images[selectedIndex];
+            const closeBtn = getCloseButton(selected);
+            const dx = coords.x - closeBtn.cx;
+            const dy = coords.y - closeBtn.cy;
+            if (dx * dx + dy * dy <= closeBtn.r * closeBtn.r) {
+                return { type: 'close', index: selectedIndex };
+            }
+            
+            const handles = getResizeHandles(selected);
+            for (const key in handles) {
+                const handle = handles[key];
+                if (coords.x >= handle.x && coords.x <= handle.x + handle.w &&
+                    coords.y >= handle.y && coords.y <= handle.y + handle.h) {
+                    return { type: 'resize', index: selectedIndex, handle: key };
+                }
+            }
+        }
+
+        // Check for image bodies
+        const imageIndex = getImageAtCoords(coords);
+        if (imageIndex !== -1) {
+            return { type: 'drag', index: imageIndex };
+        }
+
+        // Nothing was hit, so it's a pan
+        return { type: 'pan' };
+    }
+
+
+    // --- EVENT LISTENERS ---
+
+    canvas.addEventListener('mousedown', e => {
+        const worldCoords = toWorldCoords(e.clientX, e.clientY);
+        const hit = hitTest(worldCoords);
+        
+        // Default to panning for clicks on background or on images.
+        if (hit.type === 'pan' || hit.type === 'drag') {
+            interactionMode = 'pan';
+            dragStart = { x: e.clientX - originX, y: e.clientY - originY };
+            canvas.style.cursor = 'grabbing';
+            if (hit.type === 'pan') { // Only deselect when clicking the actual background.
+                selectedIndex = -1;
+            }
+        } else if (hit.type === 'resize') {
+            interactionMode = 'resize';
+            selectedIndex = hit.index;
+            resizeHandle = hit.handle;
+        } else if (hit.type === 'close') {
+            images.splice(hit.index, 1);
+            selectedIndex = -1;
+            interactionMode = 'none'; // No further interaction.
+        }
+        draw();
+    });
+
+    canvas.addEventListener('dblclick', e => {
+        // A double-click initiates a drag on an image.
+        e.preventDefault();
+        const worldCoords = toWorldCoords(e.clientX, e.clientY);
+        const hit = hitTest(worldCoords);
+
+        if (hit.type === 'drag') {
+            interactionMode = 'drag';
+            selectedIndex = hit.index;
+            // Bring image to front
+            const item = images.splice(hit.index, 1)[0];
+            images.push(item);
+            selectedIndex = images.length - 1;
+
+            // Store the offset from the top-left corner for 1-to-1 dragging
+            const selectedImg = images[selectedIndex];
+            dragStart = {
+                offsetX: worldCoords.x - selectedImg.x,
+                offsetY: worldCoords.y - selectedImg.y
+            };
+            canvas.style.cursor = 'move';
+            draw();
+        }
+    });
+
+    canvas.addEventListener('mousemove', e => {
+        if (interactionMode === 'none') {
+            // Update cursor based on what is being hovered over.
+            const worldCoords = toWorldCoords(e.clientX, e.clientY);
+            const hit = hitTest(worldCoords);
+            if (hit.type === 'resize') {
+                if (hit.handle === 'top-left' || hit.handle === 'bottom-right') canvas.style.cursor = 'nwse-resize';
+                else canvas.style.cursor = 'nesw-resize';
+            } else if (hit.type === 'close') {
+                canvas.style.cursor = 'pointer';
+            } else { // Covers 'pan' and 'drag' (image hover), which both get a 'grab' cursor.
+                canvas.style.cursor = 'grab';
+            }
+            return;
+        }
+        
+        const worldCoords = toWorldCoords(e.clientX, e.clientY);
+        if (interactionMode === 'drag') {
+            const img = images[selectedIndex];
+            img.x = worldCoords.x - dragStart.offsetX;
+            img.y = worldCoords.y - dragStart.offsetY;
+        } else if (interactionMode === 'pan') {
+            originX = e.clientX - dragStart.x;
+            originY = e.clientY - dragStart.y;
+        } else if (interactionMode === 'resize') {
+            const img = images[selectedIndex];
+            
+            // Get the fixed corner opposite to the handle being dragged
+            let oppositeCorner = {x: 0, y: 0};
+            if (resizeHandle.includes('left')) oppositeCorner.x = img.x + img.w; else oppositeCorner.x = img.x;
+            if (resizeHandle.includes('top')) oppositeCorner.y = img.y + img.h; else oppositeCorner.y = img.y;
+
+            let newW = Math.abs(worldCoords.x - oppositeCorner.x);
+            let newH = Math.abs(worldCoords.y - oppositeCorner.y);
+
+            // Maintain aspect ratio by prioritizing the dominant axis of mouse movement
+            if (newW / img.aspectRatio > newH) {
+                newH = newW / img.aspectRatio;
+            } else {
+                newW = newH * img.aspectRatio;
+            }
+            
+            // Prevent inverted or too-small images
+            if (newW < 20) { newW = 20; newH = newW / img.aspectRatio; }
+
+            img.w = newW;
+            img.h = newH;
+            
+            // Reposition top-left corner if needed
+            if (resizeHandle.includes('left')) img.x = oppositeCorner.x - newW;
+            if (resizeHandle.includes('top')) img.y = oppositeCorner.y - newH;
+        }
+        
+        draw();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (interactionMode === 'drag') {
+             canvas.style.cursor = 'grab';
+        }
+        interactionMode = 'none';
+    });
+    
+    canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const zoom = e.deltaY < 0 ? 1.07 : 0.93;
+        const worldX = (mouseX - originX) / scale;
+        const worldY = (mouseY - originY) / scale;
+        
+        scale *= zoom;
+        
+        originX = mouseX - worldX * scale;
+        originY = mouseY - worldY * scale;
+
+        draw();
+    });
+
+    // --- BUTTON CONTROLS ---
+
+    document.getElementById('add-btn').addEventListener('click', () => {
+        document.getElementById('file-input').click();
+    });
+    
+    document.getElementById('file-input').addEventListener('change', e => {
+        const files = Array.from(e.target.files);
+        let loadedCount = 0;
+        
+        if (files.length === 0) return;
+
+        files.forEach(file => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                images.push({
+                    img,
+                    x: 0, y: 0, w: 0, h: 0, // Position will be set by layout
+                    aspectRatio: img.width / img.height
+                });
+                URL.revokeObjectURL(url); // Clean up
+                
+                loadedCount++;
+                if (loadedCount === files.length) {
+                    // Once all new images are loaded, re-calculate layout for ALL images
+                    computeMasonryLayout();
+                    draw();
+                }
+            };
+            img.src = url;
+        });
+        e.target.value = ''; // Reset file input
+    });
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+        images = [];
+        selectedIndex = -1;
+        // Reset pan and zoom
+        scale = 1;
+        originX = 0;
+        originY = 0;
+        draw();
+    });
+
+    // --- INITIALIZATION ---
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+})();
+</script>
+</body>
+</html>
+
