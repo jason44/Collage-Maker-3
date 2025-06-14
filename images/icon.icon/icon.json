@@ -1,0 +1,282 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.62542,0.79487,1.00000,1.00000",
+      "display-p3:0.63229,0.96611,0.80645,1.00000"
+    ]
+  },
+  "groups" : [
+    {
+      "blend-mode" : "overlay",
+      "blur-material" : 1,
+      "layers" : [
+        {
+          "glass" : true,
+          "hidden" : true,
+          "image-name" : "zoom-fit-best-symbolic.svg",
+          "name" : "zoom-fit-best-symbolic",
+          "opacity" : 1,
+          "position" : {
+            "scale" : 75,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "opacity" : 1,
+      "position" : {
+        "scale" : 1,
+        "translation-in-points" : [
+          0,
+          0
+        ]
+      },
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.19
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.69
+      }
+    },
+    {
+      "blend-mode" : "overlay",
+      "blur-material" : 0.3,
+      "layers" : [
+        {
+          "blend-mode" : "plus-darker",
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:0.20914,0.66550,1.00000,1.00000",
+              "display-p3:0.00000,0.96611,0.03979,1.00000"
+            ]
+          },
+          "hidden" : false,
+          "image-name" : "mediaplayer-app-symbolic.svg",
+          "name" : "mediaplayer-app-symbolic",
+          "opacity" : 0.2,
+          "position" : {
+            "scale" : 90,
+            "translation-in-points" : [
+              518.4296875,
+              -639.3671875
+            ]
+          }
+        },
+        {
+          "blend-mode" : "plus-darker",
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:1.00000,0.00000,0.68986,1.00000",
+              "display-p3:0.02896,0.00000,0.96611,1.00000"
+            ]
+          },
+          "hidden" : false,
+          "image-name" : "mediaplayer-app-symbolic.svg",
+          "name" : "mediaplayer-app-symbolic",
+          "opacity" : 0.2,
+          "position" : {
+            "scale" : 90,
+            "translation-in-points" : [
+              171.9921875,
+              -815.46875
+            ]
+          }
+        },
+        {
+          "blend-mode" : "plus-darker",
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:0.37715,0.59993,1.00000,1.00000",
+              "display-p3:0.96611,0.95273,0.09190,1.00000"
+            ]
+          },
+          "hidden" : false,
+          "image-name" : "mediaplayer-app-symbolic.svg",
+          "name" : "mediaplayer-app-symbolic",
+          "opacity" : 0.05,
+          "position" : {
+            "scale" : 100,
+            "translation-in-points" : [
+              -330.265625,
+              402.421875
+            ]
+          }
+        },
+        {
+          "blend-mode" : "plus-darker",
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:0.15025,1.00000,0.00000,1.00000",
+              "display-p3:0.49985,0.96611,0.15791,1.00000"
+            ]
+          },
+          "hidden" : false,
+          "image-name" : "mediaplayer-app-symbolic.svg",
+          "name" : "mediaplayer-app-symbolic",
+          "opacity" : 0.2,
+          "position" : {
+            "scale" : 90,
+            "translation-in-points" : [
+              512.484375,
+              418.34375
+            ]
+          }
+        },
+        {
+          "blend-mode" : "plus-darker",
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:0.51250,0.02500,1.00000,1.00000",
+              "display-p3:0.96611,0.28572,0.00000,1.00000"
+            ]
+          },
+          "hidden" : false,
+          "image-name" : "mediaplayer-app-symbolic.svg",
+          "name" : "mediaplayer-app-symbolic",
+          "opacity" : 0.2,
+          "position" : {
+            "scale" : 90,
+            "translation-in-points" : [
+              171.1953125,
+              250.234375
+            ]
+          }
+        },
+        {
+          "blend-mode" : "plus-darker",
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:0.37715,0.59993,1.00000,1.00000",
+              "display-p3:0.96611,0.95273,0.09190,1.00000"
+            ]
+          },
+          "hidden" : false,
+          "image-name" : "mediaplayer-app-symbolic.svg",
+          "name" : "mediaplayer-app-symbolic",
+          "opacity" : 0.05,
+          "position" : {
+            "scale" : 90,
+            "translation-in-points" : [
+              -201.8515625,
+              64.6640625
+            ]
+          }
+        },
+        {
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:0.99785,1.00000,0.17639,1.00000",
+              "display-p3:0.52104,0.32329,1.00000,1.00000"
+            ]
+          },
+          "hidden" : true,
+          "image-name" : "wine-symbolic.svg",
+          "name" : "wine-symbolic",
+          "opacity" : 0.8,
+          "position" : {
+            "scale" : 90,
+            "translation-in-points" : [
+              -227.9296875,
+              54.98750000000001
+            ]
+          }
+        },
+        {
+          "blend-mode" : "overlay",
+          "fill" : "automatic",
+          "glass" : true,
+          "hidden" : true,
+          "image-name" : "media-playback-stop-symbolic.svg",
+          "name" : "media-playback-stop-symbolic",
+          "position" : {
+            "scale" : 45,
+            "translation-in-points" : [
+              12.4296875,
+              55.125
+            ]
+          }
+        },
+        {
+          "blend-mode" : "screen",
+          "fill" : "automatic",
+          "glass" : true,
+          "hidden" : true,
+          "image-name" : "media-playback-stop-symbolic.svg",
+          "name" : "media-playback-stop-symbolic",
+          "position" : {
+            "scale" : 40,
+            "translation-in-points" : [
+              -72.7421875,
+              -32.6640625
+            ]
+          }
+        }
+      ],
+      "lighting" : "individual",
+      "opacity" : 1,
+      "position" : {
+        "scale" : 1.2,
+        "translation-in-points" : [
+          82.703125,
+          164.546875
+        ]
+      },
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.1
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.87
+      }
+    },
+    {
+      "blend-mode" : "screen",
+      "blur-material" : 1,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "fill" : "automatic",
+          "hidden" : true,
+          "image-name" : "media-playback-stop-symbolic.svg",
+          "name" : "media-playback-stop-symbolic",
+          "position" : {
+            "scale" : 65,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "position" : {
+        "scale" : 1.2,
+        "translation-in-points" : [
+          0,
+          0
+        ]
+      },
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.1
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.78
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

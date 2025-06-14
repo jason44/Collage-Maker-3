@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collage Maker 3</title>
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <style>
         /* Basic styles for the body and layout */
         body {
@@ -18,7 +19,7 @@
         /* Container for the top control buttons */
         #controls {
             padding: 8px;
-            background: #ffffff;
+            background: #fefefe;
             display: flex;
             gap: 12px;
             border-bottom: 1px solid #dcdfe3;
@@ -26,13 +27,19 @@
             z-index: 10;
         }
 
+        #logo {
+            display: flex;
+            align-items: center;
+        }
+
         #header-title {
+            font-family: Helvetica;
             font-weight: bold;
-            font-size: 18px;
-            padding: 8px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
             margin: 0;
-            flex-grow: 1;
-            color: #333;
+            color: #494949;
         }
 
         /* Styling for buttons */
@@ -42,7 +49,7 @@
             background: #007bff;
             color: #fff;
             cursor: pointer;
-            border-radius: 5px;
+            border-radius: 16px;
             font-size: 14px;
             font-weight: 500;
             transition: background-color 0.2s ease, box-shadow 0.2s ease;
@@ -86,7 +93,11 @@
 <body>
     <!-- Control buttons for adding and clearing images -->
     <div id="controls">
-        <div id="header-title">Collage Maker 3</div>
+        <img id="logo" src="images/favicon.ico" width="32" height="32"></img>
+        <div style="display: flex;  flex-grow: 1">
+            <div id="header-title">Collage Maker</div>
+            <div id="header-title" style="color: #4c9dcf; font-size: 16px; margin-left: 4px; margin-bottom: 8px;">3</div>
+        </div>
         <button id="add-btn">Add Images</button>
         <button id="clear-btn">Clear All</button>
         <input type="file" id="file-input" accept="image/*" multiple>
@@ -120,7 +131,7 @@
     let resizeHandle = ''; // e.g., 'top-left', 'bottom-right'
 
     const handleSize = 10; // Size of resize handles in screen pixels
-    const closeButtonSize = 24; // Size of the close button
+    const closeButtonSize = 16; // Size of the close button
     const imgRadius = 5; // Corner radius for drawn images
     const dpr = window.devicePixelRatio || 1;
 
@@ -219,16 +230,28 @@
         const { x, y, w, h } = imgData;
 
         // Draw selection border
-        ctx.strokeStyle = '#007bff';
-        ctx.lineWidth = 2 / scale;
-        ctx.strokeRect(x, y, w, h);
+        ctx.strokeStyle = '#3494fa';
+        ctx.lineWidth = 1 / scale;
+        //ctx.strokeRect(x, y, w, h);
+        ctx.beginPath();
+        // Custom path for rounded rectangle
+        ctx.moveTo(x + imgRadius, y);
+        ctx.arcTo(x + w, y, x + w, y + h, imgRadius);
+        ctx.arcTo(x + w, y + h, x, y + h, imgRadius);
+        ctx.arcTo(x, y + h, x, y, imgRadius);
+        ctx.arcTo(x, y, x + w, y, imgRadius);
+        ctx.closePath();
+        ctx.stroke();
 
         // Draw resize handles
         const handles = getResizeHandles(imgData);
-        ctx.fillStyle = '#007bff';
+        ctx.fillStyle = '#3494fa';
         for (const key in handles) {
             const handle = handles[key];
-            ctx.fillRect(handle.x, handle.y, handle.w, handle.h);
+            //ctx.fillRect(handle.x, handle.y, handle.w, handle.h);
+            ctx.beginPath();
+            ctx.arc(handle.x + handle.w / 2, handle.y + handle.h / 2, handle.w / 2.0, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         // Draw close button
@@ -239,7 +262,7 @@
         ctx.fill();
         
         ctx.fillStyle = '#fff';
-        ctx.font = `bold ${14/scale}px sans-serif`;
+        ctx.font = `bold ${10/scale}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('✕', closeBtn.cx, closeBtn.cy);
@@ -303,9 +326,10 @@
      function getCloseButton(imgData) {
         const { x, w } = imgData;
         const r = closeButtonSize / 2 / scale;
+        const offset = 6 / scale; // Offset from the top-right corner
         return {
-            cx: x + w - r,
-            cy: imgData.y + r,
+            cx: x + w - r - offset,
+            cy: imgData.y +  r + offset,
             r: r,
         };
     }
@@ -314,6 +338,7 @@
      * Checks which UI element (if any) is at the given coordinates.
      * @param {object} coords - {x, y} in canvas coordinates.
      * @returns {object} { type, index, handle } describing the hit.
+     * type: 'close', 'resize', 'drag', or 'pan'. Where 'drag' indicates an image was hit.
      */
     function hitTest(coords) {
         // Check for close button or resize handles on selected image first
@@ -353,12 +378,29 @@
         const worldCoords = toWorldCoords(e.clientX, e.clientY);
         const hit = hitTest(worldCoords);
         
-        // Default to panning for clicks on background or on images.
-        if (hit.type === 'pan' || hit.type === 'drag') {
+        //  Drag only if hit image is already selected and is clicked on.
+        if (hit.type === 'drag' && selectedIndex == hit.index) {
+            interactionMode = 'drag';
+            selectedIndex = hit.index;
+
+            // Store the offset from the top-left corner for 1-to-1 dragging
+            const selectedImg = images[selectedIndex];
+            dragStart = {
+                offsetX: worldCoords.x - selectedImg.x,
+                offsetY: worldCoords.y - selectedImg.y
+            };
+
+            canvas.style.cursor = 'move';
+            draw();
+            return;
+        // Pan if hit lands on non-selected image or the background.
+        } else if (hit.type === 'pan' || hit.type === 'drag') {
             interactionMode = 'pan';
             dragStart = { x: e.clientX - originX, y: e.clientY - originY };
             canvas.style.cursor = 'grabbing';
-            if (hit.type === 'pan') { // Only deselect when clicking the actual background.
+
+            // Only deselect when clicking on non-selected image or the background.
+            if (hit.type === 'pan' || hit.index != selectedIndex) { 
                 selectedIndex = -1;
             }
         } else if (hit.type === 'resize') {
@@ -382,6 +424,7 @@
         if (hit.type === 'drag') {
             interactionMode = 'drag';
             selectedIndex = hit.index;
+
             // Bring image to front
             const item = images.splice(hit.index, 1)[0];
             images.push(item);
