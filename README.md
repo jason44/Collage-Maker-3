@@ -9,3 +9,7 @@ The second version used mostly CSS and the **img** tag. The image quality was mu
 
 ### Collage Maker 3
 This version uses the canvas element which has built in image filtering capabilities so the image quality is good. The zooming feature was implemented by scaling the canvas, which is much more performant than version 2's implementation. Additionally, free movement and scaling individual images is supported in this version.
+
+#### Usage
+1. Open `CollageMaker3.html` file in any browser.
+2. Select or drag and drop images to the page.

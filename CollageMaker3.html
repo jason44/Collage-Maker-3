@@ -19,10 +19,9 @@
         /* Container for the top control buttons */
         #controls {
             padding: 8px;
-            background: #fefefe;
+            background: #f7fbff;
             display: flex;
             gap: 12px;
-            border-bottom: 1px solid #dcdfe3;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
             z-index: 10;
         }
@@ -74,6 +73,7 @@
             position: relative;
             overflow: hidden;
             background-color: #e9ecef;
+            transition: background-color 0.2s ease;
         }
         
         /* The canvas element where the collage is drawn */
@@ -111,6 +111,7 @@
 <script>
 (() => {
     // --- SETUP ---
+    const canvasContainer = document.getElementById('canvas-container');
     const canvas = document.getElementById('collage');
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingQuality = "medium"; // might cause issues on weaker devices
@@ -185,7 +186,7 @@
 
         const gutter = 15;
         const canvasWidth = canvas.getBoundingClientRect().width / scale; // Use scaled width for layout
-        const cols = Math.max(1, Math.ceil(Math.sqrt(images.length))+1); // Target column width of 250px
+        const cols = Math.max(1, Math.ceil(Math.sqrt(images.length))+1);
         const colWidth = (canvasWidth - (cols + 1) * gutter) / cols;
         const colHeights = Array(cols).fill(gutter);
 
@@ -373,7 +374,6 @@
 
 
     // --- EVENT LISTENERS ---
-
     canvas.addEventListener('mousedown', e => {
         const worldCoords = toWorldCoords(e.clientX, e.clientY);
         const hit = hitTest(worldCoords);
@@ -523,13 +523,7 @@
     });
 
     // --- BUTTON CONTROLS ---
-
-    document.getElementById('add-btn').addEventListener('click', () => {
-        document.getElementById('file-input').click();
-    });
-    
-    document.getElementById('file-input').addEventListener('change', e => {
-        const files = Array.from(e.target.files);
+    function HandleImageUpload(files) {
         let loadedCount = 0;
         
         if (files.length === 0) return;
@@ -555,6 +549,15 @@
             img.src = url;
         });
         e.target.value = ''; // Reset file input
+    }
+
+    document.getElementById('add-btn').addEventListener('click', () => {
+        document.getElementById('file-input').click();
+    });
+    
+    document.getElementById('file-input').addEventListener('change', e => {
+        const files = Array.from(e.target.files);
+        HandleImageUpload(files)
     });
 
     document.getElementById('clear-btn').addEventListener('click', () => {
@@ -565,6 +568,25 @@
         originX = 0;
         originY = 0;
         draw();
+    });
+
+    // --- Drag and Drop Support ---
+    canvasContainer.addEventListener('dragover', e => {
+        e.preventDefault();
+        canvasContainer.style.cursor = 'copy';
+        canvasContainer.style.backgroundColor = '#dce0e3';
+    });
+
+    canvasContainer.addEventListener('dragleave', () => {
+        canvasContainer.style.cursor = 'grab';
+        canvasContainer.style.backgroundColor = '#e9ecef';
+    });
+
+    canvasContainer.addEventListener('drop', e => {
+        e.preventDefault();
+        canvasContainer.style.backgroundColor = '#e9ecef';
+        const files = Array.from(e.dataTransfer.files);
+        HandleImageUpload(files);
     });
 
     // --- INITIALIZATION ---
