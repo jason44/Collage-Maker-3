@@ -179,32 +179,218 @@
     }
 
     /**
-     * Lays out all images in a masonry grid.
+     * Lays out all new images in a masonry grid so that the grid does not overlap any existing image,
+     * and the empty space inside the bounding rectangle of all images is minimized.
+     * The column width is fixed.
+     * Additionally, tries to ensure the bounding rectangle aspect ratio is in (0.6, 1.4).
+     * @param {number} startIndex - The starting offset for NEW images
      */
-    function computeMasonryLayout() {
+    function computeMasonryLayout(startIndex = 0) {
         if (images.length === 0) return;
 
         const gutter = 15;
-        const canvasWidth = canvas.getBoundingClientRect().width / scale; // Use scaled width for layout
-        const cols = Math.max(1, Math.ceil(Math.sqrt(images.length))+1);
-        const colWidth = (canvasWidth - (cols + 1) * gutter) / cols;
-        const colHeights = Array(cols).fill(gutter);
+        const colWidth = 180; // Fixed column width
+        const minAspect = 0.6, maxAspect = 1.4;
 
-        images.forEach(imgData => {
-            const h = colWidth / imgData.aspectRatio;
-            const colIndex = colHeights.indexOf(Math.min(...colHeights));
+        // Compute bounding box of all existing images (before startIndex)
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+        for (let i = 0; i < startIndex; i++) {
+            const img = images[i];
+            minX = Math.min(minX, img.x);
+            minY = Math.min(minY, img.y);
+            maxX = Math.max(maxX, img.x + img.w);
+            maxY = Math.max(maxY, img.y + img.h);
+        }
+        if (startIndex === 0) {
+            minX = minY = gutter;
+            maxX = maxY = 0;
+        }
 
-            imgData.x = gutter + colIndex * (colWidth + gutter);
-            imgData.y = colHeights[colIndex];
-            imgData.w = colWidth;
-            imgData.h = h;
+        // Try different column counts to fit aspect ratio
+        let bestLayout = null;
+        let minEmptySpace = Infinity;
 
-            colHeights[colIndex] += h + gutter;
+        // Reasonable range for columns
+        const minCols = 1;
+        const maxCols = Math.max(1, Math.ceil(Math.sqrt(images.length - startIndex)) + 3);
+
+        for (let cols = minCols; cols <= maxCols; cols++) {
+            // Try placing the grid in several candidate positions around the bounding box
+            const candidates = [
+                { // right
+                    offsetX: maxX + gutter,
+                    offsetY: minY
+                },
+                { // left
+                    offsetX: minX - (cols * (colWidth + gutter)),
+                    offsetY: minY
+                },
+                { // below
+                    offsetX: minX,
+                    offsetY: maxY + gutter
+                },
+                { // above
+                    offsetX: minX,
+                    offsetY: minY - 1000 // will be adjusted after layout
+                }
+            ];
+
+            for (const candidate of candidates) {
+                // Simulate layout
+                let testColHeights = Array(cols).fill(gutter);
+                let testImages = images.slice(0, startIndex).map(img => ({
+                    x: img.x, y: img.y, w: img.w, h: img.h
+                }));
+                let testNewImages = [];
+
+                images.slice(startIndex).forEach(imgData => {
+                    const h = colWidth / imgData.aspectRatio;
+                    const colIndex = testColHeights.indexOf(Math.min(...testColHeights));
+                    const x = candidate.offsetX + colIndex * (colWidth + gutter);
+                    const y = candidate.offsetY + testColHeights[colIndex];
+                    testNewImages.push({ x, y, w: colWidth, h });
+                    testColHeights[colIndex] += h + gutter;
+                });
+
+                // Check for overlap with existing images
+                let overlap = false;
+                for (const newImg of testNewImages) {
+                    for (const oldImg of testImages) {
+                        if (
+                            newImg.x < oldImg.x + oldImg.w &&
+                            newImg.x + newImg.w > oldImg.x &&
+                            newImg.y < oldImg.y + oldImg.h &&
+                            newImg.y + newImg.h > oldImg.y
+                        ) {
+                            overlap = true;
+                            break;
+                        }
+                    }
+                    if (overlap) break;
+                }
+                if (overlap) continue;
+
+                // Compute bounding rectangle of all images
+                const allRects = [...testImages, ...testNewImages];
+                let rectMinX = Infinity, rectMinY = Infinity, rectMaxX = -Infinity, rectMaxY = -Infinity, totalArea = 0;
+                for (const r of allRects) {
+                    rectMinX = Math.min(rectMinX, r.x);
+                    rectMinY = Math.min(rectMinY, r.y);
+                    rectMaxX = Math.max(rectMaxX, r.x + r.w);
+                    rectMaxY = Math.max(rectMaxY, r.y + r.h);
+                    totalArea += r.w * r.h;
+                }
+                const boundingArea = (rectMaxX - rectMinX) * (rectMaxY - rectMinY);
+                const emptySpace = boundingArea - totalArea;
+                const aspect = (rectMaxX - rectMinX) / (rectMaxY - rectMinY + 1e-6);
+
+                // Only consider layouts within aspect ratio range
+                if (aspect > minAspect && aspect < maxAspect) {
+                    if (emptySpace < minEmptySpace) {
+                        minEmptySpace = emptySpace;
+                        bestLayout = {
+                            offsetX: candidate.offsetX,
+                            offsetY: candidate.offsetY,
+                            colHeights: testColHeights.slice(),
+                            positions: testNewImages.map(img => ({ x: img.x, y: img.y, w: img.w, h: img.h }))
+                        };
+                    }
+                }
+            }
+        }
+
+        // If no layout fits aspect ratio, fall back to minimizing empty space (any aspect)
+        if (!bestLayout) {
+            let fallbackMinEmpty = Infinity;
+            for (let cols = minCols; cols <= maxCols; cols++) {
+                const candidates = [
+                    { offsetX: maxX + gutter, offsetY: minY },
+                    { offsetX: minX - (cols * (colWidth + gutter)), offsetY: minY },
+                    { offsetX: minX, offsetY: maxY + gutter },
+                    { offsetX: minX, offsetY: minY - 1000 }
+                ];
+                for (const candidate of candidates) {
+                    let testColHeights = Array(cols).fill(gutter);
+                    let testImages = images.slice(0, startIndex).map(img => ({
+                        x: img.x, y: img.y, w: img.w, h: img.h
+                    }));
+                    let testNewImages = [];
+                    images.slice(startIndex).forEach(imgData => {
+                        const h = colWidth / imgData.aspectRatio;
+                        const colIndex = testColHeights.indexOf(Math.min(...testColHeights));
+                        const x = candidate.offsetX + colIndex * (colWidth + gutter);
+                        const y = candidate.offsetY + testColHeights[colIndex];
+                        testNewImages.push({ x, y, w: colWidth, h });
+                        testColHeights[colIndex] += h + gutter;
+                    });
+                    // Check for overlap
+                    let overlap = false;
+                    for (const newImg of testNewImages) {
+                        for (const oldImg of testImages) {
+                            if (
+                                newImg.x < oldImg.x + oldImg.w &&
+                                newImg.x + newImg.w > oldImg.x &&
+                                newImg.y < oldImg.y + oldImg.h &&
+                                newImg.y + newImg.h > oldImg.y
+                            ) {
+                                overlap = true;
+                                break;
+                            }
+                        }
+                        if (overlap) break;
+                    }
+                    if (overlap) continue;
+                    // Compute bounding rectangle
+                    const allRects = [...testImages, ...testNewImages];
+                    let rectMinX = Infinity, rectMinY = Infinity, rectMaxX = -Infinity, rectMaxY = -Infinity, totalArea = 0;
+                    for (const r of allRects) {
+                        rectMinX = Math.min(rectMinX, r.x);
+                        rectMinY = Math.min(rectMinY, r.y);
+                        rectMaxX = Math.max(rectMaxX, r.x + r.w);
+                        rectMaxY = Math.max(rectMaxY, r.y + r.h);
+                        totalArea += r.w * r.h;
+                    }
+                    const boundingArea = (rectMaxX - rectMinX) * (rectMaxY - rectMinY);
+                    const emptySpace = boundingArea - totalArea;
+                    if (emptySpace < fallbackMinEmpty) {
+                        fallbackMinEmpty = emptySpace;
+                        bestLayout = {
+                            offsetX: candidate.offsetX,
+                            offsetY: candidate.offsetY,
+                            colHeights: testColHeights.slice(),
+                            positions: testNewImages.map(img => ({ x: img.x, y: img.y, w: img.w, h: img.h }))
+                        };
+                    }
+                }
+            }
+        }
+
+        // If still no non-overlapping layout found, just stack below
+        if (!bestLayout) {
+            let offsetX = minX;
+            let offsetY = maxY + gutter;
+            let colHeights = Array(1).fill(gutter);
+            images.slice(startIndex).forEach((imgData, i) => {
+                const h = colWidth / imgData.aspectRatio;
+                imgData.x = offsetX;
+                imgData.y = offsetY + colHeights[0];
+                imgData.w = colWidth;
+                imgData.h = h;
+                colHeights[0] += h + gutter;
+            });
+            return;
+        }
+
+        // Apply best layout to new images
+        images.slice(startIndex).forEach((imgData, i) => {
+            imgData.x = bestLayout.positions[i].x;
+            imgData.y = bestLayout.positions[i].y;
+            imgData.w = bestLayout.positions[i].w;
+            imgData.h = bestLayout.positions[i].h;
         });
     }
 
-    /**
-     * Draws a single image with rounded corners.
+     /*** Draws a single image with rounded corners.
      * @param {object} imgData - The image object {img, x, y, w, h}.
      */
     function drawRoundedImage(imgData) {
@@ -372,6 +558,34 @@
         return { type: 'pan' };
     }
 
+    function HandleImageUpload(files) {
+        let loadedCount = 0;
+        
+        if (files.length === 0) return;
+
+        const startIndex = images.length; // Store the index where new images start
+        files.forEach(file => {
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                images.push({
+                    img,
+                    x: 0, y: 0, w: 0, h: 0, // Position will be set by layout
+                    aspectRatio: img.width / img.height,
+                    file: file.name, // Store the original file name
+                });
+                URL.revokeObjectURL(url); // Clean up
+                
+                loadedCount++;
+                if (loadedCount === files.length) {
+                    // TODO: only compute layout for new images, not all images
+                    computeMasonryLayout(startIndex);
+                    draw();
+                }
+            };
+            img.src = url;
+        });
+    }
 
     // --- EVENT LISTENERS ---
     canvas.addEventListener('mousedown', e => {
@@ -523,34 +737,6 @@
     });
 
     // --- BUTTON CONTROLS ---
-    function HandleImageUpload(files) {
-        let loadedCount = 0;
-        
-        if (files.length === 0) return;
-
-        files.forEach(file => {
-            const url = URL.createObjectURL(file);
-            const img = new Image();
-            img.onload = () => {
-                images.push({
-                    img,
-                    x: 0, y: 0, w: 0, h: 0, // Position will be set by layout
-                    aspectRatio: img.width / img.height
-                });
-                URL.revokeObjectURL(url); // Clean up
-                
-                loadedCount++;
-                if (loadedCount === files.length) {
-                    // Once all new images are loaded, re-calculate layout for ALL images
-                    computeMasonryLayout();
-                    draw();
-                }
-            };
-            img.src = url;
-        });
-        e.target.value = ''; // Reset file input
-    }
-
     document.getElementById('add-btn').addEventListener('click', () => {
         document.getElementById('file-input').click();
     });
@@ -558,6 +744,7 @@
     document.getElementById('file-input').addEventListener('change', e => {
         const files = Array.from(e.target.files);
         HandleImageUpload(files)
+        e.target.value = ''; // Reset file input
     });
 
     document.getElementById('clear-btn').addEventListener('click', () => {
