@@ -1,116 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Collage Maker 3</title>
-    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
-    <style>
-        /* Basic styles for the body and layout */
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background-color: #f0f2f5;
-        }
 
-        /* Container for the top control buttons */
-        #controls {
-            padding: 8px;
-            background: #f7fbff;
-            display: flex;
-            gap: 12px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            z-index: 10;
-        }
-
-        #logo {
-            display: flex;
-            align-items: center;
-        }
-
-        #header-title {
-            font-family: Helvetica;
-            font-weight: bold;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            margin: 0;
-            color: #494949;
-        }
-
-        /* Styling for buttons */
-        button {
-            padding: 8px 18px;
-            border: 1px solid transparent;
-            background: #007bff;
-            color: #fff;
-            cursor: pointer;
-            border-radius: 16px;
-            font-size: 14px;
-            font-weight: 500;
-            transition: background-color 0.2s ease, box-shadow 0.2s ease;
-        }
-
-        button:hover {
-            background: #0069d9;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.3);
-        }
-
-        #clear-btn {
-            background-color: #dc3545;
-        }
-        #clear-btn:hover {
-            background-color: #c82333;
-            box-shadow: 0 2px 8px rgba(220,53,69,0.3);
-        }
-
-        /* Container for the canvas to ensure it is flexible and centers the canvas */
-        #canvas-container {
-            flex: 1;
-            position: relative;
-            overflow: hidden;
-            background-color: #e9ecef;
-            transition: background-color 0.2s ease;
-        }
-        
-        /* The canvas element where the collage is drawn */
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            cursor: grab;
-        }
-
-        /* Hidden file input */
-        input[type="file"] {
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <!-- Control buttons for adding and clearing images -->
-    <div id="controls">
-        <img id="logo" src="images/favicon.ico" width="32" height="32"></img>
-        <div style="display: flex;  flex-grow: 1">
-            <div id="header-title">Collage Maker</div>
-            <div id="header-title" style="color: #4c9dcf; font-size: 16px; margin-left: 4px; margin-bottom: 8px;">3</div>
-        </div>
-        <button id="add-btn">Add Images</button>
-        <button id="clear-btn">Clear All</button>
-        <input type="file" id="file-input" accept="image/*" multiple>
-    </div>
-    
-    <!-- The main container for the canvas -->
-    <div id="canvas-container">
-        <canvas id="collage"></canvas>
-    </div>
-
-<script>
 (() => {
+    /*** TODO:
+     * - [ ] When adding only 1 or 2 images, the images are sometimes placed in odd places. Either have them appear at the center of the canvas, or fix the behavior. (This is probably due to the fallback behavior)
+     ***/
+
     // --- SETUP ---
+    const collagesList = document.getElementById('collages-list');
+    const savePrompt = document.getElementById('save-prompt');
+    const overwritePrompt = document.getElementById('overwrite-prompt');
+    const deletePrompt = document.getElementById('confirm-delete-prompt')
+
     const canvasContainer = document.getElementById('canvas-container');
     const canvas = document.getElementById('collage');
     const ctx = canvas.getContext('2d');
@@ -120,6 +19,9 @@
     // --- STATE MANAGEMENT ---
     let images = []; // Stores all image objects {img, x, y, w, h, aspectRatio}
     let selectedIndex = -1; // Index of the currently selected image
+
+    // Load and Save States
+    let collageName = ''; // Title of the collage, used for saving/loading state
     
     // Panning and Zooming State
     let scale = 1;
@@ -131,13 +33,12 @@
     let dragStart = {}; // Holds data for the current interaction
     let resizeHandle = ''; // e.g., 'top-left', 'bottom-right'
 
-    const handleSize = 10; // Size of resize handles in screen pixels
+    const handleSize = 16; // Size of resize handles in screen pixels
     const closeButtonSize = 16; // Size of the close button
     const imgRadius = 5; // Corner radius for drawn images
     const dpr = window.devicePixelRatio || 1;
 
     // --- CANVAS & DRAWING ---
-
     /**
      * Resizes the canvas to fill its container, accounting for device pixel ratio.
      */
@@ -179,10 +80,9 @@
     }
 
     /**
-     * Lays out all new images in a masonry grid so that the grid does not overlap any existing image,
-     * and the empty space inside the bounding rectangle of all images is minimized.
-     * The column width is fixed.
-     * Additionally, tries to ensure the bounding rectangle aspect ratio is in (0.6, 1.4).
+     * Lays out all new images in a masonry grid that does not overlap any existing image.
+     * Minimize the empty space inside the rectangle bounding all images.
+     * Tries to ensure the rectangle bounding all images has aspect ratio in range (0.6, 1.4).
      * @param {number} startIndex - The starting offset for NEW images
      */
     function computeMasonryLayout(startIndex = 0) {
@@ -572,19 +472,102 @@
                     img,
                     x: 0, y: 0, w: 0, h: 0, // Position will be set by layout
                     aspectRatio: img.width / img.height,
-                    file: file.name, // Store the original file name
+                    path: window.electronAPI.getPath(file),  // Store the original file name
                 });
                 URL.revokeObjectURL(url); // Clean up
                 
                 loadedCount++;
                 if (loadedCount === files.length) {
-                    // TODO: only compute layout for new images, not all images
                     computeMasonryLayout(startIndex);
                     draw();
                 }
             };
             img.src = url;
         });
+        console.log(images)
+    }
+
+    // --- LOAD AND SAVE STATES ---
+
+    /*** Adds new collage to the dropdown list and sets it as the current selection
+     * @param {string} name - The name of the collage to be added to the dropdown list.
+     * This function does not update the state or load anything. 
+    */
+    function addToCollagesList(name) { 
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        collagesList.appendChild(option);
+
+        collageName = name; // update current collage title
+        collagesList.value = name; // update dropdown selection
+    }
+
+    /*** Remove a collage from the dropdown list
+     * @param {string} name - The name of the collage to be removed from the dropdown list.
+     */
+    function removeFromCollagesList(name) {
+        const option = collagesList.querySelector(`option[value="${name}"]`);
+        if (option) {
+            collagesList.removeChild(option);
+        }
+        collagesList.value = collagesList.options[0].value; // assign the current selection to the top most option
+        collageName = collagesList.value;
+    }
+
+    /*** Save the collage state using the current title 
+     * @param {string} name - The name to save the collage state under.
+     * @param {boolean} addToList - Whether to add 'name' to collagesList.
+    */
+    function saveState(name, addToList) {
+        console.log(`Saving collage state as "${name}"...`);
+        const state = {
+            images: images.map(image => ({
+                path: image.path,
+                x: image.x, y: image.y, w: image.w, h: image.h, aspectRatio: image.aspectRatio
+            })),
+            scale,
+            originX,
+            originY
+        };
+
+        console.log(state);
+        window.electronAPI.saveState(name, state);
+
+        if (addToList) {
+            addToCollagesList(name);
+        }
+    }
+
+    /* Load a saved state by its name */
+    function loadState(name) {
+        const state = window.electronAPI.getState(name);
+        if (state) {
+            console.log(state);
+
+            images = state.images.map(img => ({
+                img: new Image(),
+                x: img.x, y: img.y, w: img.w, h: img.h, aspectRatio: img.aspectRatio,
+                path: img.path
+            }));
+            images.forEach((image, i) => {
+                const url = window.electronAPI.createUrlFromPath(image.path);
+                image.img.src = url;
+            });
+
+            console.log(images)
+
+            scale = state.scale || 1;
+            originX = state.originX || 0;
+            originY = state.originY || 0;
+
+            collageName = name; // update current collage name
+            collagesList.value = name // update dropdown selection
+
+            window.resizeBy(0, 1); // force redrawing canvas (find a better way to do this?)
+        } else {
+            alert(`Error: Collage "${name}" not found.`);
+        }
     }
 
     // --- EVENT LISTENERS ---
@@ -724,7 +707,7 @@
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
         
-        const zoom = e.deltaY < 0 ? 1.07 : 0.93;
+        const zoom = e.deltaY < 0 ? 1.1 : 0.9;
         const worldX = (mouseX - originX) / scale;
         const worldY = (mouseY - originY) / scale;
         
@@ -750,14 +733,141 @@
     document.getElementById('clear-btn').addEventListener('click', () => {
         images = [];
         selectedIndex = -1;
-        // Reset pan and zoom
         scale = 1;
         originX = 0;
         originY = 0;
         draw();
     });
 
-    // --- Drag and Drop Support ---
+    document.getElementById('save-btn').addEventListener('click', () => {
+        if (!collageName) {
+            savePrompt.style.display = 'flex'; // show save prompt if collage is unsaved
+        } else {
+           saveState(collageName, false); // collage has been previously saved, so just save it again
+        }
+    });
+
+    function clearCollage() {
+        images = [];
+        selectedIndex = -1;
+        scale = 1;
+        originX = 0;
+        originY = 0;
+        draw();
+    }
+
+    async function launchSaveOrDiscardPrompt() {
+        // Show prompt to save current collage when moving from an unsaved collage to a saved one
+        document.getElementById('prompt-name-discard-btn').style.display = 'flex'
+        document.getElementById('prompt-name-cancel-btn').style.display = 'none'
+        document.getElementById('save-prompt-text').innerHTML = "The current collage has not been saved. Save it now as";
+        savePrompt.style.display = 'flex';
+
+        // Wait for the save prompt to close before loading state
+        await new Promise(resolve => {
+            const handler = () => {
+                savePrompt.removeEventListener('transitionend', handler);
+                savePrompt.removeEventListener('displayNone', handler);
+                resolve();
+            };
+            // Listen for prompt being hidden (display: none)
+            const observer = new MutationObserver(() => {
+                if (savePrompt.style.display === 'none') {
+                    observer.disconnect();
+                    resolve();
+                }
+            });
+            observer.observe(savePrompt, { attributes: true, attributeFilter: ['style'] });
+        });
+
+        document.getElementById('prompt-name-discard-btn').style.display = 'none'
+        document.getElementById('prompt-name-cancel-btn').style.display = 'flex'
+        document.getElementById('save-prompt-text').innerHTML = "Save collage as";
+    }
+
+    document.getElementById('new-collage-btn').addEventListener('click', async () => {
+        if (collageName !== '') {
+            saveState(collageName, false); // auto-save if moving from an existing collage
+        } else {
+            await launchSaveOrDiscardPrompt();
+        }
+        addToCollagesList(''); // move to a new unsaved collage
+        clearCollage(); // clear the canvas
+    });
+
+    document.getElementById('delete-collage-btn').addEventListener('click', () => {
+        deletePrompt.style.display = 'flex';
+        document.getElementById('delete-name').innerHTML = collageName
+    })
+
+    // --- COLLAGES DROPDOWN LIST ---
+    collagesList.addEventListener('change', async (e) => {
+        const selectedName = e.target.value;
+        if (collageName && collageName !== selectedName) { 
+            saveState(collageName, false); // move from saved collage to a different collage
+            loadState(selectedName);
+        } else if (!collageName && collageName !== selectedName) {
+            await launchSaveOrDiscardPrompt(); // move from unsaved collage to a different collage
+            loadState(selectedName);
+        } else {
+            return; // No change in selection
+        }
+    });
+
+    // --- SAVE, OVERWRITE, AND DELETE PROMPTS ---
+    document.getElementById('prompt-name-save-btn').addEventListener('click', () => {
+        const nameInput = document.getElementById('collage-name-input');
+        const selectedName = nameInput.value.trim();
+        if (selectedName) {
+            // TODO: check to see if the name is already used, and prompt to overwrite if it is.
+            savePrompt.style.display = 'none';
+            nameInput.value = ''; // Reset input
+            
+            collageName = selectedName;
+            saveState(selectedName, true); // append 'submittedName' to dropdown list, which also means updating 'collageName' 
+
+            removeFromCollagesList('') // remove '' from list
+        } else {
+            alert('Please enter a valid title for the collage.');
+        }
+    });
+
+    document.getElementById('prompt-name-cancel-btn').addEventListener('click', () => {
+        savePrompt.style.display = 'none';
+    });
+
+    document.getElementById('prompt-name-discard-btn').addEventListener('click', () => {
+        savePrompt.style.display = 'none';
+        removeFromCollagesList(collageName); // updates collageName
+    });
+
+    document.getElementById('prompt-overwrite-btn').addEventListener('click', () => {
+        // TODO
+        overwritePrompt.style.display = 'none';
+    });
+
+    document.getElementById('prompt-overwrite-cancel-btn').addEventListener('click', () => {
+        overwritePrompt.style.display = 'none';
+    });
+
+    document.getElementById('prompt-delete-btn').addEventListener('click', () => {
+        if (collageName) {
+            const states = window.electronAPI.get('states');
+            delete states[collageName];
+            window.electronAPI.set('states', states);
+            removeFromCollagesList(collageName);
+            loadState(collageName);
+        } else {
+            clearCollage(); // just clear collage if it is unsaved.
+        }
+        deletePrompt.style.display = 'none';
+    });
+
+    document.getElementById('prompt-delete-cancel-btn').addEventListener('click', () => {
+        deletePrompt.style.display = 'none';
+    });
+
+    // --- DRAG AND DROP SUPPORT ---
     canvasContainer.addEventListener('dragover', e => {
         e.preventDefault();
         canvasContainer.style.cursor = 'copy';
@@ -776,11 +886,16 @@
         HandleImageUpload(files);
     });
 
+
     // --- INITIALIZATION ---
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
-})();
-</script>
-</body>
-</html>
 
+    // populate the collages list with all saved collages
+    window.electronAPI.getStateNames().forEach(name => {
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = name;
+        collagesList.appendChild(option);
+    })
+})();

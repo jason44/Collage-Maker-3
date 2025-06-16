@@ -1,1 +1,5 @@
 .DS_Store
+.Collage_Maker
+node_modules
+.continue
+dist

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Collage Maker 3</title>
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+    <style>
+        /* Basic styles for the body and layout */
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: #f0f2f5;
+            color: #292929;
+        }
+
+        #header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 8px;
+            background: transparent;
+            /*background: rgba(235,235,235,0.6);*/
+            /*backdrop-filter: blur(16px); */
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        #logo {
+            display: flex;
+            align-items: center;
+        }
+
+        #header-title {
+            font-family: Helvetica;
+            font-weight: bold;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            margin: 0;
+            color: #292929;
+            text-wrap: nowrap;
+        }
+
+        .floating-container {
+            background-color: #fff;
+            padding: 8px 18px;
+            border: 1px solid transparent;
+            color: #292929;
+            cursor: pointer;
+            border-radius: 16px;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 2px 4px rgba(123,123,255,0.25);
+            text-wrap: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .floating-container:hover {
+            box-shadow: 0 2px 8px rgba(123,123,255,0.5);
+        }
+
+        button:active {
+            transform: scale(1.1);
+        }
+   
+        .icon-button {
+            min-width: 40px;
+            max-width: 40px;
+            padding: 2px 12px;
+        }
+
+        #collages-list {
+            min-width: 120px; 
+            max-width: 220px; 
+            font-size: 14px; 
+            border-color: #898989; 
+            text-align: center; 
+            text-wrap: nowrap; 
+            overflow: hidden; 
+            border: none;
+        } 
+
+        /* Floating controls for adding and clearing images */
+        #canvas-controls {
+            position: fixed;
+            bottom: 16px;
+            right: 16px;
+            display: flex;
+            gap: 12px;
+            z-index: 10;
+            flex-direction: column;
+        }
+
+        #add-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        #clear-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Container for the canvas to ensure it is flexible and centers the canvas */
+        #canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background-color: #eceef1;
+            transition: background-color 0.2s ease;
+        }
+        
+        /* The canvas element where the collage is drawn */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        /* Hidden file input */
+        input[type="file"] {
+            display: none;
+        }
+        
+        /* On screen prompt */
+        .prompt {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(12px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+        .prompt button {
+            border-radius: 20px;
+            min-width: 100px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;      /* Vertically center text */
+            justify-content: center;  /* Horizontally center text */
+        }
+
+        .prompt > div {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            padding: 32px 28px 24px 28px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 300px;
+        }
+
+        .prompt input {
+            width: 90%;
+            padding: 10px 12px;
+            font-size: 16px;
+            border-radius: 20px;
+            border: 1px solid #ccc;
+            margin-bottom: 18px;
+            outline: none;
+        }
+
+        #overwrite-name, #delete-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #292929;
+            margin-bottom: 16px;
+            padding: 8px 24px;
+            border-radius: 20px;
+            outline: none;
+            cursor: pointer;
+            min-width: 85%;
+            text-align: center;
+            text-shadow: 0px 1px 4px rgba(0,0,0,.1);
+        }
+
+        .constructive-color {
+            background: #007bff;
+            color: #fff;
+            box-shadow: 0 2px 4px rgba(0,123,255,0.25);
+        }
+
+        .constructive-color:hover {
+            background: #0056b3;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.5);
+        }
+
+        .constructive-color-minor {
+            background: #fff;
+            color: #007bff;
+        }
+
+        .constructive-color-minor:hover {
+            background: #007bff;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(0,123,255,0.5);
+        }
+
+        .destructive-color {
+            background: #c82333;
+            color: #fff;
+            box-shadow: 0 2px 4px rgba(220,53,69,0.25);
+        }
+        .destructive-color:hover {
+            background: #a71d2a;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(220,53,69,0.5);
+        }
+
+        .destructive-color-minor {
+            background: #fff;
+            color: #c82333;
+        }
+
+        .destructive-color-minor:hover {
+            background: #c82333;
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(220,53,69,0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Control buttons for adding and clearing images -->
+    <div id="header">
+        <img id="logo" src="images/favicon.ico" width="32" height="32"></img>
+        <div style="display: flex;  flex-grow: 1">
+            <div id="header-title">Collage Maker</div>
+            <div id="header-title" style="color: #4c9dcf; font-size: 16px; margin-left: 4px; margin-bottom: 8px;">3</div>
+        </div>
+        <input type="file" id="file-input" accept="image/*" multiple>
+        <select id="collages-list" class="floating-container">
+            <option value=""></option>
+        </select>
+        <button id="save-btn" class="floating-container icon-button" title="Save">
+            <img src="images/save-symbolic.svg" alt="Save" style="width:12px; height:12px; vertical-align:middle;">
+        </button>
+        <button id="new-collage-btn" class="floating-container icon-button" style="font-size: 20px;" title="New Collage">+</button>
+        <button id="delete-collage-btn" class="floating-container icon-button destructive-color-minor" style="font-size: 22px;" title="Delete Collage">×</button>
+        <div style="padding: 0 5px"></div>
+    </div>
+    <!-- Floating controls for add/clear -->
+    <div id="canvas-controls">
+        <button id="add-btn" class="floating-container constructive-color-minor">Add Images</button>
+        <button id="clear-btn" class="floating-container destructive-color-minor">Clear All</button>
+    </div>
+    <!-- The main container for the canvas -->
+    <div id="canvas-container">
+        <canvas id="collage"></canvas>
+    </div>
+    <!-- Prompt for saving and naming current collage -->
+    <div id="save-prompt" class="prompt">
+        <div><div id="save-prompt-text" style="font-size:16px; margin-bottom:16px; text-align: center">Save collage as</div>
+            <input id="collage-name-input" type="text" placeholder="Enter name" />
+            <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
+                <button id="prompt-name-discard-btn" class="floating-container destructive-color-minor" style="display: none">Discard</button>
+                <button id="prompt-name-cancel-btn" class="floating-container">Cancel</button>
+                <button id="prompt-name-save-btn" class="floating-container constructive-color">Save</button>
+        </div></div>
+    </div>
+    <!-- Prompt for overwriting existing collage in store -->
+    <div id="overwrite-prompt" class="prompt">
+        <div><div style="font-size:16px; margin-bottom:16px;">Are you sure you want to overwrite the existing collage</div>
+            <div id="overwrite-name">Sample Name</div>
+            <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
+                <button id="prompt-overwrite-cancel-btn" class="floating-container">Cancel</button>
+                <button id="prompt-overwrite-btn" class="floating-container destructive-color">Overwrite</button>
+        </div></div>
+    </div>
+    <!-- Prompt for deleting existing collage in store -->
+    <div id="confirm-delete-prompt" class="prompt">
+        <div><div style="font-size:16px; margin-bottom:16px;">Are you sure you want to delete</div>
+            <div id="delete-name">Sample Name</div>
+            <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
+                <button id="prompt-delete-cancel-btn" class="floating-container">Cancel</button>
+                <button id="prompt-delete-btn" class="floating-container destructive-color">Delete</button>
+        </div></div>
+    </div>
+<script type="module" src="renderer.js"></script>
+</body>
+</html>
+
