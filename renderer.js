@@ -523,7 +523,8 @@
             collagesList.append(newCollage);
         } 
 
-        // default to top most option
+        // Default to the bottom most option. This behavior is desirable 
+        // new collages are added to the bottom of the list see "save-btn below"
         collagesList.value = collagesList.options[collagesList.options.length-1].value; 
         collageName = collagesList.value;
     }
