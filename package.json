@@ -11,8 +11,16 @@
   },
   "build": {
     "appId": "com.jason44.CollageMaker3",
+    "productName": "Collage Maker 3",
     "mac": {
-      "category": "public.app-category.graphics-design"
+      "category": "public.app-category.graphics-design",
+      "icon": "images/appicon.png"
+    },
+    "win": {
+      "icon": "images/appicon.png"
+    },
+    "linux": {
+      "icon": "images/appicon.png"
     }
   },
   "postinstall": "electron-builder install-app-deps",
@@ -36,6 +44,6 @@
     "electron-reloader": "^1.2.3"
   },
   "dependencies": {
-    "electron-store": "^10.0.0"
+    "electron-store": "^10.1.0"
   }
 }
