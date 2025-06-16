@@ -506,12 +506,25 @@
     /*** Remove a collage from the dropdown list
      * @param {string} name - The name of the collage to be removed from the dropdown list.
      */
-    function removeFromCollagesList(name) {
+    function removeFromCollagesList(name, clearCanvas=true) {
         const option = collagesList.querySelector(`option[value="${name}"]`);
         if (option) {
             collagesList.removeChild(option);
         }
-        collagesList.value = collagesList.options[0].value; // assign the current selection to the top most option
+        if (clearCanvas) {
+            clearCollage()
+        }
+
+        // Make sure that the list is not empty before setting the value
+        if (collagesList.children.length === 0) {
+            const newCollage = document.createElement('option');
+            newCollage.value = '';
+            newCollage.textContent = '';
+            collagesList.append(newCollage);
+        } 
+
+        // default to top most option
+        collagesList.value = collagesList.options[collagesList.options.length-1].value; 
         collageName = collagesList.value;
     }
 
@@ -541,6 +554,7 @@
 
     /* Load a saved state by its name */
     function loadState(name) {
+        if (!name) return;
         const state = window.electronAPI.getState(name);
         if (state) {
             console.log(state);
@@ -822,11 +836,11 @@
             // TODO: check to see if the name is already used, and prompt to overwrite if it is.
             savePrompt.style.display = 'none';
             nameInput.value = ''; // Reset input
-            
+
             collageName = selectedName;
             saveState(selectedName, true); // append 'submittedName' to dropdown list, which also means updating 'collageName' 
-
-            removeFromCollagesList('') // remove '' from list
+            
+            removeFromCollagesList("", false);
         } else {
             alert('Please enter a valid title for the collage.');
         }
@@ -855,6 +869,7 @@
             const states = window.electronAPI.get('states');
             delete states[collageName];
             window.electronAPI.set('states', states);
+            
             removeFromCollagesList(collageName);
             loadState(collageName);
         } else {
