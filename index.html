@@ -56,18 +56,42 @@
             border-radius: 16px;
             font-size: 14px;
             font-weight: 500;
-            transition: background-color 0.2s ease, box-shadow 0.2s ease;
             box-shadow: 0 2px 4px rgba(123,123,255,0.25);
             text-wrap: nowrap;
             transition: all 0.2s ease;
         }
 
         .floating-container:hover {
-            box-shadow: 0 2px 8px rgba(123,123,255,0.5);
+            box-shadow: 0 2px 4px rgba(123,123,255,0.5);
         }
 
         button:active {
             transform: scale(1.1);
+        }
+
+        .split-container {
+            border-radius: 16px;
+            padding: 0px; /* padding determined by children */
+            display: inline-flex;
+            overflow: hidden;
+        }
+        
+        .split-container:hover {
+            box-shadow: 0 2px 4px rgba(123,123,255,0.25);
+        }
+
+        .split-container button {
+            box-shadow: none;
+        }
+
+        .split-container button:hover {
+            box-shadow: 0 2px 4px rgba(123,123,255,0.25);
+            transform: translateY(-2px);
+        }
+
+        .split-container select:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 2px 4px rgba(123,123,255,0.25);
         }
    
         .icon-button {
@@ -85,7 +109,14 @@
             text-wrap: nowrap; 
             overflow: hidden; 
             border: none;
+            border-radius: 16px;
+            background-color: inherit;
+            transition: all 0.2s ease;
         } 
+
+        select:focus {
+            outline: none;
+        }
 
         /* Floating controls for adding and clearing images */
         #canvas-controls {
@@ -241,9 +272,10 @@
             <div id="header-title" style="color: #4c9dcf; font-size: 16px; margin-left: 4px; margin-bottom: 8px;">3</div>
         </div>
         <input type="file" id="file-input" accept="image/*" multiple>
-        <select id="collages-list" class="floating-container">
-            <option value=""></option>
-        </select>
+        <div class="floating-container split-container">
+            <button id="edit-name-btn" class="floating-container icon-button" style="margin: 4px;"><img src="images/edit-symbolic.svg" alt="Save" style="width:14px; height:14px; vertical-align:middle;"></button> 
+            <select id="collages-list"><option value=""></option></select>
+        </div>
         <button id="save-btn" class="floating-container icon-button" title="Save">
             <img src="images/save-symbolic.svg" alt="Save" style="width:12px; height:12px; vertical-align:middle;">
         </button>

@@ -489,51 +489,48 @@
 
     // --- LOAD AND SAVE STATES ---
 
-    /*** Adds new collage to the dropdown list and sets it as the current selection
-     * @param {string} name - The name of the collage to be added to the dropdown list.
-     * This function does not update the state or load anything. 
-    */
-    function addToCollagesList(name) { 
-        const option = document.createElement('option');
-        option.value = name;
-        option.textContent = name;
-        collagesList.appendChild(option);
+    function populateCollagesList() {
+        // Get names and sort alphabetically (case-insensitive)
+        const names = (window.electronAPI.getStateNames() || []).slice().sort((a, b) =>
+            a.toLowerCase().localeCompare(b.toLowerCase())
+        );
 
+        collagesList.innerHTML = '';
+        for (const name of names) {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            collagesList.appendChild(option);
+        }
+
+        if (collagesList.children.length == 0) {
+            const newOption = document.createElement('option');
+            newOption.value = '';
+            newOption.textContent = '';
+            collagesList.prepend(newOption);
+            setActiveCollage('');
+            clearCollage(); // clear the canvas
+        }
+        
+        // default to first option. just call setActive to change this behavior
+        collagesList.value = collagesList.options[0].value; // set default option
+        collageName = collagesList.value;
+    }
+
+    /*** Set the active collage. 
+     * @param {string} name - The name of the collage we want to show
+     * This function does not update the state or load anything.
+    */
+    function setActiveCollage(name) { 
         collageName = name; // update current collage title
         collagesList.value = name; // update dropdown selection
     }
 
-    /*** Remove a collage from the dropdown list
-     * @param {string} name - The name of the collage to be removed from the dropdown list.
-     */
-    function removeFromCollagesList(name, clearCanvas=true) {
-        const option = collagesList.querySelector(`option[value="${name}"]`);
-        if (option) {
-            collagesList.removeChild(option);
-        }
-        if (clearCanvas) {
-            clearCollage()
-        }
-
-        // Make sure that the list is not empty before setting the value
-        if (collagesList.children.length === 0) {
-            const newCollage = document.createElement('option');
-            newCollage.value = '';
-            newCollage.textContent = '';
-            collagesList.append(newCollage);
-        } 
-
-        // Default to the bottom most option. This behavior is desirable 
-        // new collages are added to the bottom of the list see "save-btn below"
-        collagesList.value = collagesList.options[collagesList.options.length-1].value; 
-        collageName = collagesList.value;
-    }
-
     /*** Save the collage state using the current title 
      * @param {string} name - The name to save the collage state under.
-     * @param {boolean} addToList - Whether to add 'name' to collagesList.
+     * @param {boolean} setActive - whether to consider 'name' the active collage.
     */
-    function saveState(name, addToList) {
+    function saveState(name, setActive) {
         console.log(`Saving collage state as "${name}"...`);
         const state = {
             images: images.map(image => ({
@@ -548,8 +545,9 @@
         console.log(state);
         window.electronAPI.saveState(name, state);
 
-        if (addToList) {
-            addToCollagesList(name);
+        populateCollagesList(); // update dropdown list to include newly saved collage
+        if (setActive) {
+            setActiveCollage(name);
         }
     }
 
@@ -745,13 +743,17 @@
         e.target.value = ''; // Reset file input
     });
 
-    document.getElementById('clear-btn').addEventListener('click', () => {
+    function clearCollage() {
         images = [];
         selectedIndex = -1;
         scale = 1;
         originX = 0;
         originY = 0;
         draw();
+    }
+
+    document.getElementById('clear-btn').addEventListener('click', () => {
+        clearCollage();
     });
 
     document.getElementById('save-btn').addEventListener('click', () => {
@@ -762,14 +764,10 @@
         }
     });
 
-    function clearCollage() {
-        images = [];
-        selectedIndex = -1;
-        scale = 1;
-        originX = 0;
-        originY = 0;
-        draw();
-    }
+    document.getElementById('delete-collage-btn').addEventListener('click', () => {
+        deletePrompt.style.display = 'flex';
+        document.getElementById('delete-name').innerHTML = collageName
+    })
 
     async function launchSaveOrDiscardPrompt() {
         // Show prompt to save current collage when moving from an unsaved collage to a saved one
@@ -801,19 +799,25 @@
     }
 
     document.getElementById('new-collage-btn').addEventListener('click', async () => {
-        if (collageName !== '') {
+        if (collageName) {
             saveState(collageName, false); // auto-save if moving from an existing collage
         } else {
-            await launchSaveOrDiscardPrompt();
+            await launchSaveOrDiscardPrompt(); // prompt to save or discard if on an unsaved collage
         }
-        addToCollagesList(''); // move to a new unsaved collage
-        clearCollage(); // clear the canvas
+        
+        if (collagesList.value != '') {
+            const newOption = document.createElement('option');
+            newOption.value = '';
+            newOption.textContent = '';
+            collagesList.prepend(newOption);
+            setActiveCollage('');
+            clearCollage(); // clear the canvas
+        } // else populateCollagesList(); already made a new collage for us.
     });
 
-    document.getElementById('delete-collage-btn').addEventListener('click', () => {
-        deletePrompt.style.display = 'flex';
-        document.getElementById('delete-name').innerHTML = collageName
-    })
+    document.getElementById('edit-name-btn').addEventListener('click', async () => {
+        // TODO...
+    });
 
     // --- COLLAGES DROPDOWN LIST ---
     collagesList.addEventListener('change', async (e) => {
@@ -835,13 +839,12 @@
         const selectedName = nameInput.value.trim();
         if (selectedName) {
             // TODO: check to see if the name is already used, and prompt to overwrite if it is.
+            collageName = selectedName;
+            saveState(selectedName, true); // setActive=true because the name of the collage changed
+
             savePrompt.style.display = 'none';
             nameInput.value = ''; // Reset input
 
-            collageName = selectedName;
-            saveState(selectedName, true); // append 'submittedName' to dropdown list, which also means updating 'collageName' 
-            
-            removeFromCollagesList("", false);
         } else {
             alert('Please enter a valid title for the collage.');
         }
@@ -853,7 +856,8 @@
 
     document.getElementById('prompt-name-discard-btn').addEventListener('click', () => {
         savePrompt.style.display = 'none';
-        removeFromCollagesList(collageName); // updates collageName
+        clearCollage();
+        populateCollagesList();
     });
 
     document.getElementById('prompt-overwrite-btn').addEventListener('click', () => {
@@ -871,10 +875,12 @@
             delete states[collageName];
             window.electronAPI.set('states', states);
             
-            removeFromCollagesList(collageName);
+            populateCollagesList();
             loadState(collageName);
         } else {
-            clearCollage(); // just clear collage if it is unsaved.
+            // just remove the unsaved collage from the list
+            populateCollagesList();
+            loadState(collageName);
         }
         deletePrompt.style.display = 'none';
     });
