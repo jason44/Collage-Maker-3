@@ -512,8 +512,8 @@
             clearCollage(); // clear the canvas
         }
         
-        // default to first option. just call setActive to change this behavior
-        collagesList.value = collagesList.options[0].value; // set default option
+        // Default to setting the first option. Remember to call setActive if you want to change this behavior!
+        collagesList.value = collagesList.options[0].value; 
         collageName = collagesList.value;
     }
 
@@ -760,7 +760,7 @@
         if (!collageName) {
             savePrompt.style.display = 'flex'; // show save prompt if collage is unsaved
         } else {
-           saveState(collageName, false); // collage has been previously saved, so just save it again
+           saveState(collageName, true); // collage has been previously saved, so just save it again
         }
     });
 
