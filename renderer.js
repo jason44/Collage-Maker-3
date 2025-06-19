@@ -766,7 +766,11 @@
 
     document.getElementById('delete-collage-btn').addEventListener('click', () => {
         deletePrompt.style.display = 'flex';
-        document.getElementById('delete-name').innerHTML = collageName
+        if (collageName) {
+            document.getElementById('delete-name').innerHTML = collageName
+        } else {
+            document.getElementById('delete-name').innerHTML = "Unsaved Collage";
+        }
     })
 
     async function launchSaveOrDiscardPrompt() {
@@ -908,6 +912,56 @@
         HandleImageUpload(files);
     });
 
+    // --- DYNAMIC VISUALS ---
+    /**
+     * Adds a mousemove event listener to shift the box shadows of a given class
+     * @param {string} className - The class to apply the effect to.
+     */
+    function enableDynamicShadowFor(className, darkMode) {
+        document.addEventListener('mousemove', (e) => {
+            const rect = document.documentElement.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            // Vector from center to mouse
+            let dx = e.clientX - centerX;
+            let dy = e.clientY - centerY;
+
+            const len = Math.sqrt(dx * dx + dy * dy) || 1;
+            dx = Math.round(dx / len);
+            dy = Math.round(dy / len);
+
+            document.querySelectorAll('.' + className).forEach(el => {
+                if (darkMode) {
+                    const color = getComputedStyle(el).outlineColor || 'rgba(120,125,150,0.35)';
+                    el.style.boxShadow = `${dx}px ${dy}px 0px ${color}`;
+                } else {
+                    const color = 'rgba(120,125,150,0.25)';
+                    el.style.boxShadow = `${dx*2}px ${2-dy}px 4px ${color}`;
+                }
+            });
+        });
+    }
+
+    // --- LIGHT AND DARK MODE ---
+    function updateTheme() {
+        const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        const editBtnImg = document.querySelector('#edit-name-btn img');
+        editBtnImg.src = isDark ? 'images/edit-symbolic-dark.svg' : 'images/edit-symbolic.svg';
+
+        const saveBtnImg = document.querySelector('#save-btn img');
+        saveBtnImg.src = isDark ? 'images/save-symbolic-dark.svg' : 'images/save-symbolic.svg';
+
+        if (isDark) {
+            enableDynamicShadowFor('floating-container', true);
+        } else {
+            enableDynamicShadowFor('floating-container', false);
+        }
+    }
+
+    updateTheme();
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateTheme);
 
     // --- INITIALIZATION ---
     window.addEventListener('resize', resizeCanvas);

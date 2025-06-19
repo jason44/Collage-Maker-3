@@ -39,7 +39,26 @@
       <feColorMatrix
          id="feColorMatrix7"
          values="-1 0 0 0 1 0 -1 0 0 1 0 0 -1 0 1 -0.21 -0.72 -0.07 2 0 "
-         result="color2" />
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         result="fbSourceGraphicAlpha"
+         in="fbSourceGraphic"
+         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
+         id="feColorMatrix1" />
+      <feColorMatrix
+         id="feColorMatrix2"
+         values="10 -1.43312 -1.43312 0 10 -1.43312 10 -1.43312 0 10 -1.43312 -1.43312 10 0 10 0 0 0 1 0 "
+         in="fbSourceGraphic"
+         result="fbSourceGraphic" />
+      <feColorMatrix
+         result="fbSourceGraphicAlpha"
+         in="fbSourceGraphic"
+         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
+         id="feColorMatrix8" />
+      <feColorMatrix
+         id="feColorMatrix9"
+         values="10 -1.43312 -1.43312 0 10 -1.43312 10 -1.43312 0 10 -1.43312 -1.43312 10 0 10 0 0 0 1 0 "
+         in="fbSourceGraphic" />
     </filter>
   </defs>
   <path

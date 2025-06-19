@@ -6,15 +6,47 @@
     <title>Collage Maker 3</title>
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <style>
+        :root {
+            --text-color: #292929;
+            --bg-color: #eceef1;
+            --bg-color-light: #f8fafd;
+            --container-bg-color: #fff;
+            --container-bg-color-transparent: rgba(255, 255, 255, 0.9);
+            --container-bg-dark-transparent: rgba(245, 245, 245, 0.9);
+            --border: none;
+        }
+    
         /* Basic styles for the body and layout */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-color: #fefefe;
+                --bg-color: #262729;
+                --bg-color-light: #292a2c;
+                --container-bg-color: #303133;
+                --container-bg-color-transparent: rgba(48, 49, 51, 0.95);
+                --container-bg-dark-transparent: rgba(54, 55, 57, 0.95);
+                --border: 1px solid rgba(67, 68, 70, 0.6); 
+            } 
+        }
+
         body {
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             flex-direction: column;
             height: 100vh;
-            background: #fff;
-            color: #292929;
+            background: var(--bg-color);
+            color: var(--text-color);
+            outline: none;
+        }
+
+        img {
+            user-select: none;
+            -webkit-user-drag: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            pointer-events: auto;
         }
 
         #header {
@@ -25,44 +57,26 @@
             padding: 8px;
             background: transparent;
             /*background: rgba(235,235,235,0.6);*/
-            /*backdrop-filter: blur(16px); */
             display: flex;
             gap: 12px;
             z-index: 100;
         }
 
-        #logo {
-            display: flex;
-            align-items: center;
-        }
-
-        #header-title {
-            font-family: Helvetica;
-            font-weight: bold;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            color: #292929;
-            text-wrap: nowrap;
-        }
-
         .floating-container {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(4px);
+            background: var(--container-bg-color-transparent);
+            backdrop-filter: blur(12px);
             padding: 2px 10px;
-            /*border: 1px ridge #fefefe; */
-            border: 1px solid transparent;
-            color: #292929;
-            border-radius: 16px;
+            border: var(--border);
+            color: var(--text-color);
+            border-radius: 20px;
             font-size: 14px;
-            font-weight: 500;
-            box-shadow: 0 2px 4px rgba(123,123,255,0.25);
             text-wrap: nowrap;
-            transition: all 0.2s ease;
+            transition: all 0.2s linear;
+            outline-color: rgba(120, 125, 150, 0.35);
         }
 
-        .floating-container:hover {
-            box-shadow: 0 2px 4px rgba(123,123,255,0.5);
+        button:hover {
+            background-color: var(--container-bg-dark-transparent);
         }
 
         button:active {
@@ -70,27 +84,23 @@
         }
 
         .floating-backdrop {
-            border-radius: 16px;
             padding: 0px; /* padding determined by children */
-            display: inline-flex;
+            display: flex;
             overflow: hidden;
             gap: 2px;
             padding: 1px 2px;
+            min-width: max-content;
+            background: var(--container-bg-color-transparent);
         }
         
-        .floating-backdrop:hover {
-            box-shadow: 0 2px 4px rgba(123,123,255,0.25);
-        }
-
         .floating-backdrop button, .floating-backdrop select {
-            box-shadow: none;
-            margin-top: 2px; 
+            border: none;
+            margin-top: 2px;
             margin-bottom: 2px;
         }
 
-        .floating-backdrop button:hover, .floating-backdrop select:hover {
-            box-shadow: 0 2px 4px rgba(123,123,255,0.25);
-            transform: translateY(-2px);
+        .floating-backdrop select:hover {
+            background: var(--container-bg-dark-transparent);
         }
  
         .icon-button {
@@ -102,15 +112,12 @@
             min-width: 120px; 
             max-width: 220px; 
             font-size: 14px; 
-            border-color: #898989; 
             text-align: center; 
             text-wrap: nowrap; 
             overflow: hidden; 
-            border: none;
-            border-radius: 16px;
-            background: inherit;
-            transition: all 0.2s ease;
+            border-radius: 20px;
             padding: 0px;
+            outline-color: inherit;
         } 
 
         select:focus {
@@ -132,16 +139,12 @@
             padding: 8px 18px;
         }
 
-        #canvas-controls button:hover {
-            transform: translateY(-2px);
-        }
-
         /* Container for the canvas to ensure it is flexible and centers the canvas */
         #canvas-container {
             flex: 1;
             position: relative;
             overflow: hidden;
-            background: #eceef1;
+            background: var(--bg-color);
         }
         
         /* The canvas element where the collage is drawn */
@@ -165,98 +168,73 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.2);
+            backdrop-filter: blur(12px);
             z-index: 200;
             align-items: center;
             justify-content: center;
-            gap: 20px;
         }
 
         .prompt button {
             border-radius: 20px;
-            min-width: 100px;
+            min-width: 120px;
             min-height: 40px;
-            display: flex;
-            align-items: center;      /* Vertically center text */
-            justify-content: center;  /* Horizontally center text */
+            align-items: center;
+            justify-content: center;
         }
 
         .prompt > div {
-            background: #fefefe;
-            border-radius: 20px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-            padding: 32px 28px 24px 28px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            background: var(--bg-color-light);
+            border-radius: 24px;
+            padding: 24px 28px;
             max-width: 300px;
+            text-wrap: wrap;
         }
 
-        .prompt input {
-            width: 90%;
-            padding: 10px 12px;
+        .prompt-center-info {
             font-size: 16px;
-            border-radius: 20px;
-            border: 1px solid #ccc;
-            margin-bottom: 18px;
+            margin-bottom: 16px;
             outline: none;
+            text-align: center;
+            min-width: 95%;
+            border-radius: 20px;
         }
 
-        #overwrite-name, #delete-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #292929;
-            margin-bottom: 16px;
-            padding: 8px 24px;
-            border-radius: 20px;
-            outline: none;
-            cursor: pointer;
-            min-width: 85%;
-            text-align: center;
-            text-shadow: 0px 1px 4px rgba(0,0,0,.1);
+        .text-input-field {
+            text-align: left;
+            padding: 10px;
+            outline-color: inherit;
         }
 
         .constructive-color {
-            background: #007bff;
+            background: #3567dc;
             color: #fff;
-            box-shadow: 0 2px 4px rgba(0,123,255,0.25);
+            outline-color: #35c6dc;
         }
-
         .constructive-color:hover {
-            background: #0056b3;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.5);
+            background: #2e5abf;
         }
 
         .constructive-color-minor {
-            color: #007bff;
-        }
-
-        .constructive-color-minor:hover {
-            background: #007bff;
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(0,123,255,0.5);
+            color: #3d76fc;
+            outline-color: rgba(53,103,220,0.55);
         }
 
         .destructive-color {
-            background: #c82333;
+            background: #dc3545;
             color: #fff;
-            box-shadow: 0 2px 4px rgba(220,53,69,0.25);
+            outline-color: #dc9f35;
         }
         .destructive-color:hover {
-            background: #a71d2a;
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(220,53,69,0.5);
+            background: #b02a37;
         }
 
         .destructive-color-minor {
-            color: #c82333;
+            color: #dc3545;
+            outline-color: rgba(220, 53, 69, 0.4);
         }
 
-        .destructive-color-minor:hover {
-            background: #c82333;
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(220,53,69,0.5);
-        }
+
     </style>
 </head>
 <body>
@@ -286,8 +264,8 @@
     </div>
     <!-- Prompt for saving and naming current collage -->
     <div id="save-prompt" class="prompt">
-        <div><div id="save-prompt-text" style="font-size:16px; margin-bottom:16px; text-align: center">Save collage as</div>
-            <input id="collage-name-input" type="text" placeholder="Enter name" />
+        <div class="floating-container"><div id="save-prompt-text" style="font-size:16px; margin-bottom:16px; text-align: center">Save collage as</div>
+            <input id="collage-name-input" type="text" placeholder="Enter name" class="floating-container prompt-center-info text-input-field"/>
             <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
                 <button id="prompt-name-discard-btn" class="floating-container destructive-color-minor" style="display: none">Discard</button>
                 <button id="prompt-name-cancel-btn" class="floating-container">Cancel</button>
@@ -296,8 +274,8 @@
     </div>
     <!-- Prompt for overwriting existing collage in store -->
     <div id="overwrite-prompt" class="prompt">
-        <div><div style="font-size:16px; margin-bottom:16px;">Are you sure you want to overwrite the existing collage</div>
-            <div id="overwrite-name">Sample Name</div>
+        <div class="floating-container"><div style="font-size:16px; margin-bottom:16px; text-align: center;">Are you sure you want to overwrite the existing collage</div>
+            <div id="overwrite-name" class="prompt-center-info">Sample Name</div>
             <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
                 <button id="prompt-overwrite-cancel-btn" class="floating-container">Cancel</button>
                 <button id="prompt-overwrite-btn" class="floating-container destructive-color">Overwrite</button>
@@ -305,8 +283,8 @@
     </div>
     <!-- Prompt for deleting existing collage in store -->
     <div id="confirm-delete-prompt" class="prompt">
-        <div><div style="font-size:16px; margin-bottom:16px;">Are you sure you want to delete</div>
-            <div id="delete-name">Sample Name</div>
+        <div class="floating-container"><div style="font-size:16px; margin-bottom:16px; text-align: center;">Are you sure you want to delete</div>
+            <div id="delete-name" class="prompt-center-info">Sample Name</div>
             <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
                 <button id="prompt-delete-cancel-btn" class="floating-container">Cancel</button>
                 <button id="prompt-delete-btn" class="floating-container destructive-color">Delete</button>
