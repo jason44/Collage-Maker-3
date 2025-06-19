@@ -1,21 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Collage Maker 3</title>
     <link rel="icon" type="image/x-icon" href="images/favicon.ico">
     <style>
+        /**
+         * outline-color: used by dark theme box-shadow color
+         * accent-color: used by light theme box-shadow color
+         */
+
         :root {
             --text-color: #292929;
             --bg-color: #eceef1;
             --bg-color-light: #f8fafd;
             --container-bg-color: #fff;
             --container-bg-color-transparent: rgba(255, 255, 255, 0.9);
-            --container-bg-dark-transparent: rgba(245, 245, 245, 0.9);
-            --border: none;
+            --container-bg-dark-transparent: rgba(247, 247, 247, 0.9);
+            --border: 1px solid rgba(182, 187, 192, 0.6);
         }
-    
+
         /* Basic styles for the body and layout */
         @media (prefers-color-scheme: dark) {
             :root {
@@ -23,10 +29,10 @@
                 --bg-color: #262729;
                 --bg-color-light: #292a2c;
                 --container-bg-color: #303133;
-                --container-bg-color-transparent: rgba(48, 49, 51, 0.95);
-                --container-bg-dark-transparent: rgba(54, 55, 57, 0.95);
-                --border: 1px solid rgba(67, 68, 70, 0.6); 
-            } 
+                --container-bg-color-transparent: rgba(48, 49, 51, 0.9);
+                --container-bg-dark-transparent: rgba(54, 55, 57, 0.9);
+                --border: 1px solid rgba(67, 68, 70, 0.6);
+            }
         }
 
         body {
@@ -38,6 +44,17 @@
             background: var(--bg-color);
             color: var(--text-color);
             outline: none;
+            align-content: center;
+            justify-content: center;
+        }
+
+        #app-window {
+            box-sizing: border-box;
+            border: var(--border);
+            height: 99.9vh;
+            width: 99.9vw;
+            align-self: center;
+            transition: box-shadow 0.2s linear;
         }
 
         img {
@@ -49,14 +66,13 @@
             pointer-events: auto;
         }
 
-        #header {
+        #headerbar {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             padding: 8px;
             background: transparent;
-            /*background: rgba(235,235,235,0.6);*/
             display: flex;
             gap: 12px;
             z-index: 100;
@@ -73,6 +89,7 @@
             text-wrap: nowrap;
             transition: all 0.2s linear;
             outline-color: rgba(120, 125, 150, 0.35);
+            accent-color: rgba(120, 125, 150, 0.4);
         }
 
         button:hover {
@@ -84,41 +101,39 @@
         }
 
         .floating-backdrop {
-            padding: 0px; /* padding determined by children */
             display: flex;
             overflow: hidden;
             gap: 2px;
-            padding: 1px 2px;
-            min-width: max-content;
+            padding: 0 2px;
+            min-width: max-content; /* vertical padding determined by children */
             background: var(--container-bg-color-transparent);
         }
-        
+
         .floating-backdrop button, .floating-backdrop select {
             border: none;
-            margin-top: 2px;
-            margin-bottom: 2px;
+            margin: 2px 0;
         }
 
         .floating-backdrop select:hover {
             background: var(--container-bg-dark-transparent);
         }
- 
+
         .icon-button {
             min-width: 40px;
             max-width: 40px;
         }
 
         #collages-list {
-            min-width: 120px; 
-            max-width: 220px; 
-            font-size: 14px; 
-            text-align: center; 
-            text-wrap: nowrap; 
-            overflow: hidden; 
+            min-width: 120px;
+            max-width: 220px;
+            font-size: 14px;
+            text-align: center;
+            text-wrap: nowrap;
+            overflow: hidden;
             border-radius: 20px;
             padding: 0px;
             outline-color: inherit;
-        } 
+        }
 
         select:focus {
             outline: none;
@@ -145,8 +160,9 @@
             position: relative;
             overflow: hidden;
             background: var(--bg-color);
+            height: 100%;
         }
-        
+
         /* The canvas element where the collage is drawn */
         canvas {
             display: block;
@@ -159,7 +175,7 @@
         input[type="file"] {
             display: none;
         }
-        
+
         /* On screen prompt */
         .prompt {
             display: none;
@@ -168,7 +184,7 @@
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0, 0, 0, 0.2);
             backdrop-filter: blur(12px);
             z-index: 200;
             align-items: center;
@@ -183,7 +199,7 @@
             justify-content: center;
         }
 
-        .prompt > div {
+        .prompt>div {
             background: var(--bg-color-light);
             border-radius: 24px;
             padding: 24px 28px;
@@ -210,21 +226,25 @@
             background: #3567dc;
             color: #fff;
             outline-color: #35c6dc;
+            accent-color: rgba(53, 103, 220, 0.55);
         }
+
         .constructive-color:hover {
             background: #2e5abf;
         }
 
         .constructive-color-minor {
             color: #3d76fc;
-            outline-color: rgba(53,103,220,0.55);
+            outline-color: rgba(53, 103, 220, 0.55);
         }
 
         .destructive-color {
             background: #dc3545;
             color: #fff;
             outline-color: #dc9f35;
+            accent-color: rgba(220, 53, 69, 0.55);
         }
+
         .destructive-color:hover {
             background: #b02a37;
         }
@@ -233,64 +253,86 @@
             color: #dc3545;
             outline-color: rgba(220, 53, 69, 0.4);
         }
-
-
     </style>
 </head>
-<body>
-    <!-- Control buttons for adding and clearing images -->
-    <div id="header">
-        <div style="display: flex;  flex-grow: 1"></div>
-        <input type="file" id="file-input" accept="image/*" multiple>
-        <div class="floating-container floating-backdrop">
-            <button id="edit-name-btn" class="floating-container icon-button"><img src="images/edit-symbolic.svg" alt="Save" style="width:14px; height:14px; vertical-align:middle;"></button> 
-            <select id="collages-list" class="floating-container"><option value=""></option></select>
-        </div>
-        <button id="save-btn" class="floating-container icon-button" title="Save">
-            <img src="images/save-symbolic.svg" alt="Save" style="width:12px; height:12px; vertical-align:middle;">
-        </button>
-        <button id="new-collage-btn" class="floating-container icon-button" style="font-size: 20px;" title="New Collage">+</button>
-        <button id="delete-collage-btn" class="floating-container icon-button destructive-color-minor" style="font-size: 22px;" title="Delete Collage">×</button>
-        <div style="padding: 0 5px"></div>
-    </div>
-    <!-- Floating controls for add/clear -->
-    <div id="canvas-controls">
-        <button id="add-btn" class="floating-container constructive-color-minor">Add Images</button>
-        <button id="clear-btn" class="floating-container destructive-color-minor">Clear All</button>
-    </div>
-    <!-- The main container for the canvas -->
-    <div id="canvas-container">
-        <canvas id="collage"></canvas>
-    </div>
-    <!-- Prompt for saving and naming current collage -->
-    <div id="save-prompt" class="prompt">
-        <div class="floating-container"><div id="save-prompt-text" style="font-size:16px; margin-bottom:16px; text-align: center">Save collage as</div>
-            <input id="collage-name-input" type="text" placeholder="Enter name" class="floating-container prompt-center-info text-input-field"/>
-            <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
-                <button id="prompt-name-discard-btn" class="floating-container destructive-color-minor" style="display: none">Discard</button>
-                <button id="prompt-name-cancel-btn" class="floating-container">Cancel</button>
-                <button id="prompt-name-save-btn" class="floating-container constructive-color">Save</button>
-        </div></div>
-    </div>
-    <!-- Prompt for overwriting existing collage in store -->
-    <div id="overwrite-prompt" class="prompt">
-        <div class="floating-container"><div style="font-size:16px; margin-bottom:16px; text-align: center;">Are you sure you want to overwrite the existing collage</div>
-            <div id="overwrite-name" class="prompt-center-info">Sample Name</div>
-            <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
-                <button id="prompt-overwrite-cancel-btn" class="floating-container">Cancel</button>
-                <button id="prompt-overwrite-btn" class="floating-container destructive-color">Overwrite</button>
-        </div></div>
-    </div>
-    <!-- Prompt for deleting existing collage in store -->
-    <div id="confirm-delete-prompt" class="prompt">
-        <div class="floating-container"><div style="font-size:16px; margin-bottom:16px; text-align: center;">Are you sure you want to delete</div>
-            <div id="delete-name" class="prompt-center-info">Sample Name</div>
-            <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
-                <button id="prompt-delete-cancel-btn" class="floating-container">Cancel</button>
-                <button id="prompt-delete-btn" class="floating-container destructive-color">Delete</button>
-        </div></div>
-    </div>
-<script type="module" src="renderer.js"></script>
-</body>
-</html>
 
+<body>
+    <!-- Window controls -->
+    <div id="window-controls" class="floating-container" style="position: fixed; top: 0px; right: 0px; margin-right: 0; z-index: 200; border-top-right-radius: 0; border-top-left-radius: 0; border-bottom-right-radius: 0; padding: 6px; display: hidden;">
+        <button id="minimize-window-btn" class="floating-container icon-button">_</button>
+        <button id="maximize-window-btn" class="floating-container icon-button">□</button>
+        <button id="close-window-btn" class="floating-container icon-button">✕</button>
+    </div>
+    <div id="app-window">
+        <!-- Header bar containing controls-->
+        <div id="headerbar">
+            <div style="display: flex; flex-grow: 1; app-region: drag;"></div>
+            <input type="file" id="file-input" accept="image/*" multiple>
+            <div class="floating-container floating-backdrop">
+                <button id="edit-name-btn" class="floating-container icon-button"><img src="images/edit-symbolic.svg"
+                        alt="Save" style="width:14px; height:14px; vertical-align:middle;"></button>
+                <select id="collages-list" class="floating-container">
+                    <option value=""></option>
+                </select>
+            </div>
+            <button id="save-btn" class="floating-container icon-button" title="Save">
+                <img src="images/save-symbolic.svg" alt="Save" style="width:12px; height:12px; vertical-align:middle;">
+            </button>
+            <button id="new-collage-btn" class="floating-container icon-button" style="font-size: 20px;"
+                title="New Collage">+</button>
+            <button id="delete-collage-btn" class="floating-container icon-button destructive-color-minor"
+                style="font-size: 22px;" title="Delete Collage">×</button>
+        </div>
+        <!-- Floating controls for add/clear -->
+        <div id="canvas-controls">
+            <button id="add-btn" class="floating-container constructive-color-minor">Add Images</button>
+            <button id="clear-btn" class="floating-container destructive-color-minor">Clear All</button>
+        </div>
+        <!-- The main container for the canvas -->
+        <div id="canvas-container">
+            <canvas id="collage"></canvas>
+        </div>
+        <!-- Prompt for saving and naming current collage -->
+        <div id="save-prompt" class="prompt">
+            <div class="floating-container">
+                <div id="save-prompt-text" style="font-size:16px; margin-bottom:16px; text-align: center">Save collage
+                    as</div>
+                <input id="collage-name-input" type="text" placeholder="Enter name"
+                    class="floating-container prompt-center-info text-input-field" />
+                <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
+                    <button id="prompt-name-discard-btn" class="floating-container destructive-color-minor"
+                        style="display: none">Discard</button>
+                    <button id="prompt-name-cancel-btn" class="floating-container">Cancel</button>
+                    <button id="prompt-name-save-btn" class="floating-container constructive-color">Save</button>
+                </div>
+            </div>
+        </div>
+        <!-- Prompt for overwriting existing collage in store -->
+        <div id="overwrite-prompt" class="prompt">
+            <div class="floating-container">
+                <div style="font-size:16px; margin-bottom:16px; text-align: center;">Are you sure you want to overwrite
+                    the existing collage</div>
+                <div id="overwrite-name" class="prompt-center-info">Sample Name</div>
+                <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
+                    <button id="prompt-overwrite-cancel-btn" class="floating-container">Cancel</button>
+                    <button id="prompt-overwrite-btn" class="floating-container destructive-color">Overwrite</button>
+                </div>
+            </div>
+        </div>
+        <!-- Prompt for deleting existing collage in store -->
+        <div id="confirm-delete-prompt" class="prompt">
+            <div class="floating-container">
+                <div style="font-size:16px; margin-bottom:16px; text-align: center;">Are you sure you want to delete
+                </div>
+                <div id="delete-name" class="prompt-center-info">Sample Name</div>
+                <div style="display:flex; gap: 16px; width:100%; justify-content: center;">
+                    <button id="prompt-delete-cancel-btn" class="floating-container">Cancel</button>
+                    <button id="prompt-delete-btn" class="floating-container destructive-color">Delete</button>
+                </div>
+            </div>
+        </div>
+        <script type="module" src="renderer.js"></script>
+    </div>
+</body>
+
+</html>

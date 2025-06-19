@@ -20,7 +20,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     //getPath: (file) => file.path,
     //getPath: (file) => ipcRenderer.sendSync('get-path', file),
     getPath: (file) => webUtils.getPathForFile(file),
-    createUrlFromPath: (filePath) => ipcRenderer.sendSync('create-url-from-path', filePath)
+    createUrlFromPath: (filePath) => ipcRenderer.sendSync('create-url-from-path', filePath),
+    windowMinimize: () => ipcRenderer.send('window-minimize'),
+    windowMaximize: () => ipcRenderer.send('window-maximize'),
+    windowClose: () => ipcRenderer.send('window-close'),
 });
 
 

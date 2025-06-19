@@ -8,6 +8,8 @@ import Store from 'electron-store';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+let win; // application window
+
 const store = new Store({ defaults: { states: {}, lastState: '' } });
 
 // --- IPC EVENT HANDLERS ---
@@ -45,14 +47,34 @@ ipcMain.on('create-url-from-path', async (event, filePath) => {
     event.returnValue = encodeURI('file://' + resolvedPath);
 })
 
+ipcMain.on('window-minimize', async () => {
+    if (win) win.minimize();
+});
+
+ipcMain.on('window-maximize', async () => {
+    if (win) {
+        if (win.isMaximized()) {
+            win.unmaximize();
+        } else {
+            win.maximize();
+        }
+    }
+});
+
+ipcMain.on('window-close', async () => {
+    if (win) win.close();
+});
+
 // --- INITIALIZATION ---
 //store.clear(); for DEBUG
-
 function createWindow() {
-    const win = new BrowserWindow({
+    win = new BrowserWindow({
         width: 1200,
         height: 900,
-
+        minHeight: 450,
+        minWidth: 600,
+        titleBarStyle: 'hidden',
+        //...(process.platform !== 'darwin' ? { titleBarOverlay: true } : {}),
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
         }

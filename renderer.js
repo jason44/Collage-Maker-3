@@ -5,6 +5,7 @@
      ***/
 
     // --- SETUP ---
+    const appWindow = document.getElementById('app-window');
     const collagesList = document.getElementById('collages-list');
     const savePrompt = document.getElementById('save-prompt');
     const overwritePrompt = document.getElementById('overwrite-prompt');
@@ -936,12 +937,18 @@
                     const color = getComputedStyle(el).outlineColor || 'rgba(120,125,150,0.35)';
                     el.style.boxShadow = `${dx}px ${dy}px 0px ${color}`;
                 } else {
-                    const color = 'rgba(120,125,150,0.25)';
-                    el.style.boxShadow = `${dx*2}px ${2-dy}px 4px ${color}`;
+                    const color = getComputedStyle(el).accentColor || 'rgba(120,125,150,0.35)';
+                    el.style.boxShadow = `${dx*2}px ${2+dy}px 4px ${color}`;
                 }
             });
+            
+            // Add dynamic shadow to the window border
+            if (darkMode) {
+                appWindow.style.boxShadow = `${dx}px ${dy}px 1px rgba(120, 125, 150, 0.35)`;
+            }
         });
     }
+
 
     // --- LIGHT AND DARK MODE ---
     function updateTheme() {
@@ -960,10 +967,30 @@
         }
     }
 
+
+    // --- INITIALIZATION ---
     updateTheme();
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateTheme);
 
-    // --- INITIALIZATION ---
+    /* Window controls */
+    if (!navigator.userAgent.includes('Macintosh')) {
+        /* Add padding to the right of the headerbar so header 
+         * controls don't overlap with the window controls */
+        const windowControlsSpace = document.createElement('div');
+        const width = '155px';
+        windowControlsSpace.style.width = width;
+        windowControlsSpace.style.minWidth = width;
+        windowControlsSpace.style.height = '1px';
+        windowControlsSpace.style.pointerEvents = 'none';
+        document.getElementById('headerbar').appendChild(windowControlsSpace);
+
+        document.getElementById('window-controls').style.display = 'block';
+        document.getElementById('minimize-window-btn').onclick = () => window.electronAPI.windowMinimize();
+        document.getElementById('maximize-window-btn').onclick = () => window.electronAPI.windowMaximize();
+        document.getElementById('close-window-btn').onclick = () => window.electronAPI.windowClose();
+
+    }
+
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
