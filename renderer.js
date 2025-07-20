@@ -898,17 +898,17 @@
     canvasContainer.addEventListener('dragover', e => {
         e.preventDefault();
         canvasContainer.style.cursor = 'copy';
-        canvasContainer.style.backgroundColor = '#dce0e3';
+        canvasContainer.style.backgroundColor = 'var(--bg-color-dark)';
     });
 
     canvasContainer.addEventListener('dragleave', () => {
         canvasContainer.style.cursor = 'grab';
-        canvasContainer.style.backgroundColor = '#e9ecef';
+        canvasContainer.style.backgroundColor = 'var(--bg-color';
     });
 
     canvasContainer.addEventListener('drop', e => {
         e.preventDefault();
-        canvasContainer.style.backgroundColor = '#e9ecef';
+        canvasContainer.style.backgroundColor = 'var(--bg-color';
         const files = Array.from(e.dataTransfer.files);
         HandleImageUpload(files);
     });
@@ -988,7 +988,6 @@
         document.getElementById('minimize-window-btn').onclick = () => window.electronAPI.windowMinimize();
         document.getElementById('maximize-window-btn').onclick = () => window.electronAPI.windowMaximize();
         document.getElementById('close-window-btn').onclick = () => window.electronAPI.windowClose();
-
     }
 
     window.addEventListener('resize', resizeCanvas);

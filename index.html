@@ -16,6 +16,7 @@
             --text-color: #292929;
             --bg-color: #eceef1;
             --bg-color-light: #f8fafd;
+            --bg-color-dark: #e2e4e7;
             --container-bg-color: #fff;
             --container-bg-color-transparent: rgba(255, 255, 255, 0.9);
             --container-bg-dark-transparent: rgba(247, 247, 247, 0.9);
@@ -28,6 +29,7 @@
                 --text-color: #fefefe;
                 --bg-color: #262729;
                 --bg-color-light: #292a2c;
+                --bg-color-dark: #2e2f31;
                 --container-bg-color: #303133;
                 --container-bg-color-transparent: rgba(48, 49, 51, 0.9);
                 --container-bg-dark-transparent: rgba(54, 55, 57, 0.9);
@@ -258,7 +260,7 @@
 
 <body>
     <!-- Window controls -->
-    <div id="window-controls" class="floating-container" style="position: fixed; top: 0px; right: 0px; margin-right: 0; z-index: 200; border-top-right-radius: 0; border-top-left-radius: 0; border-bottom-right-radius: 0; padding: 6px; display: hidden;">
+    <div id="window-controls" class="floating-container" style="position: fixed; top: 0px; right: 0px; margin-right: 0; z-index: 200; border-top-right-radius: 0; border-top-left-radius: 0; border-bottom-right-radius: 0; padding: 6px; display: none;">
         <button id="minimize-window-btn" class="floating-container icon-button">_</button>
         <button id="maximize-window-btn" class="floating-container icon-button">□</button>
         <button id="close-window-btn" class="floating-container icon-button">✕</button>
@@ -282,6 +284,7 @@
                 title="New Collage">+</button>
             <button id="delete-collage-btn" class="floating-container icon-button destructive-color-minor"
                 style="font-size: 22px;" title="Delete Collage">×</button>
+            <div style="padding: 5px;"></div>
         </div>
         <!-- Floating controls for add/clear -->
         <div id="canvas-controls">
